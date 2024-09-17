@@ -1,0 +1,3 @@
+***Limited File Uploads***
+	- When using the technique of uploading svg to exploit XXE sometimes the output will only appear in the 'page source' (html)
+	- XXE doesn’t always have to ‘pop’. Sometimes is gets spit back in the source code!

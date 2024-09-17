@@ -1,0 +1,112 @@
+The original tmux prefix is set to: ctrl + b
+
+How to create a new session in tmux:
+# tmux new -s <session_name>
+	-ex: # tmux new -s Session
+
+How to switch back to the regular shell session:
+# tmux detach
+
+How to view all tmux sessions from the regular shell session:
+# tmux ls
+
+How to view all tmux sessions from a tmux enabled shell session:
+prefix -> s
+
+How to go back into a session:
+# tmux attach -t <session_name>
+
+How to split a session window in tmux vertically:
+prefix -> %
+
+How to split a session window in tmux horizontally:
+prefix -> "
+
+How to move between panes:
+prefix -> arrow key (left,right,up,down) 
+
+How to open the tmux command prompt:
+prefix -> :
+
+How to resize a pane in tmux:
+	-Open the tmux command prompt and use the following command
+	-: resize-pane -<Direction (U,D,L,R)> <cell_size>
+	-ex):resize-pane -D 10
+
+How to maximize a tmux pane:
+prefix -> z
+
+
+How to create a new window in a tmux session:
+prefix -> c
+
+How to navigate to a specific window in a tmux session:
+prefix -> <session #>
+	-ex: prefix -> 0
+
+How to rename a window in a tmux session:
+prefix -> ,
+
+How to go to window ahead:
+prefix -> n
+
+How to go to the previous window:
+prefix -> p
+
+How to create a new window and move the active pane into it at the same time:
+prefix -> !
+
+How to move a pane into another window:
+	-Mark the pane with the command:
+		- prefix -> m
+	
+	-Go to the desired window you would like to import the marked pane into
+		-Issue the following command into the tmux command prompt:
+			-: join-pane
+		-If you would like to insert the pain as a vertical split attach the [-h] switch like so:
+			-: join-pane -h
+
+The following command moves the active pane into a new pane in the desired window:
+	-: joinp -t :<window_#>
+	-: joinp -t :1
+
+To view all the windows in a tmux session:
+prefix -> w
+
+
+****Respawn command****
+Type respawn-window into the tmux command prompt
+
+Type respawn-pane into the tmux command prompt
+
+**Trying the above respawn commands on an active window or pane fails unless the [-k]ill flag is supplied:
+:respawn-pane -k 0
+
+
+****Kill commands****
+How to kill the active tmux session:
+type kill-session into the tmux command prompt
+
+How to kill the active window and all the panes within it:
+type kill-window into the tmux command prompt
+	-keyboard shortcut: prefix -> &
+
+How to kill the active pane:
+type kill-pane into the tmux command prompt
+	-keyboard shortcut: prefix -> x
+
+
+How to enter vim mode in temux to navigate pane:
+prefix -> [
+
+How to exit vim mode:
+ctrl + c
+
+How to install new plugins with tpm plugin manager:
+prefix -> shift + i
+
+How to save a session with tmux-resurrect plugin:
+prefix -> ctrl + s
+
+How to restore a session with tmux-resurrect plugin:
+prefix -> ctrl + r

@@ -1,0 +1,159 @@
+How to connect clipboard to wayland clipboard manager.
+https://stackoverflow.com/questions/61379318/how-to-copy-from-vim-to-system-clipboard-using-wayland-and-without-compiled-vim
+
+How to map vim to wayland copy and paste registers.
+https://www.reddit.com/r/Fedora/comments/ax9p9t/vim_and_system_clipboard_under_wayland/
+
+Explanation on clipboards using X11(xorg-server):
+https://vi.stackexchange.com/questions/84/how-can-i-copy-text-to-the-system-clipboard-from-vim
+
+How to change Neovim (nvim) theme:
+Space + t + h
+
+Documentation on neovim autocmd: https://neovim.io/doc/user/autocmd.html
+
+How to copy to the end of the line but to a different register:
+"<register>y$
+	-ex: "3y$ #copies to the end of the line and saves it to register 3
+
+
+**NvChad**
+Youtube tutorial: https://www.youtube.com/watch?v=Mtgo-nP_r8Y
+
+How to view all supported language syntax highlighting:
+:TSInstall info
+
+How to install the syntax highlighting:
+:TSInstall <supported_programming_language>
+
+How to open NvChad(Neovim distribution) file tree:
+CTRL + 	n
+
+How to convert vimscript code into lua for your confing.
+https://neovim.io/doc/user/lua-guide.html#lua-guide
+
+How to add plugins to NvChad (neovim distributions):
+Go to ~/.config/nvim/lua/custom/plugins.lua. And append to the desired plugin. Then run "NvChadUpdate".
+  - lazy.nvim plugin manager lazy loads the plugins by default meaning that the plugins will only load when they are needed which in return makes vim run faster. Where as in regular neovim the plugins are loaded when neovim is launched. Some plugins like "tpope/vim-surround" only work if they are loaded when neovim is intially launced. So to turn off lazy loading add "lazy = false" to the plugins configuration dictionary.
+  - Be aware that ther is no package manager for lazy.nvim. So you will have to scour github. You can look for plugin recommendations from the lazy vim github.
+  - Documentation for lazy.vim: https://github.com/folke/lazy.nvim
+  - Documentation for lazy.nvim plugins: https://www.lazyvim.org/configuration/plugins
+  - Documentation for NvChad: https://nvchad.com/docs/quickstart/install
+
+How to update NvChad:
+NvChadUpdate
+
+NvChad ships with a cheat sheet:
+space -> c -> h    (Use same to close the cheat sheet)
+
+***** If nerd font is not rendering some icons correctly and rendering them as questionmarks try installing the latest version of that nerd font.
+
+
+Vim Cheatsheet:
+https://vim.rtorr.com/
+
+**ChadNV file tree shortcuts**
+To open and close file tree:
+CTRL + n
+
+!!To close neovim make sure you close the file tree first or else neovim wont let you quit.
+
+How to create a new file:
+a
+
+How to copy a file:
+c
+
+How to paste a file:
+p
+
+How to rename a file:
+r
+
+If you are working with alot of files and want to help recognizes certain files more quickly while working you can mark file with the m key to mark it for viewing.
+
+**NvChad Terminal**
+To open terminal with a horizontal view:
+space -> h
+
+To open terminal with a horizontal view:
+space -> v
+
+Type close the terminal type exit into the terminal:
+# exit
+
+**NvChad smart current working directory autocmd
+Placed the autocmd from this link in the ~/.config/nvim/lua/custom/init.lua file:
+https://www.reddit.com/r/neovim/comments/120phl1/smart_current_working_directory/?rdt=56258
+    - With this autocmd you can now type :cd <directory> to change working directory that path. 
+       - Example: :cd / 
+
+In neovim buffers are different than tabs... tabs are like workspaces in hyprland and buffers are like tabs in regular vim.
+
+How to move to next or previous buffer:
+CTRL + o or CTRL + i
+
+Another way to move to the next or previous buffer:
+TAB or SHIFT + TAB
+
+How to close active buffer:
+space -> x
+
+How to search for a specific buffer:
+space -> f -> b
+
+How to search for a specific file:
+space -> f -> f
+
+**** When in visual block mode you have to use SHIFT key and the motion for it to work ***
+	-To insert multiple lines in visual block mode you have to press SHIFT + i or SHIFT + a
+	-To copy multiple lines in visual block mode you have to press SHIFT + y
+
+How to resize a windows to equal height and width in vim:
+ctrl + w -> =
+
+How to comment html in vim:
+<!-- <br>
+     <br>
+     <br>
+     <br>
+     <br> -->
+     
+     <br><br>br>
+
+How to comment out css:
+/*display: inline-block;*/
+
+
+How to set folds manually in neovim:
+	-Set the fold method in nvim:
+		:set foldmethod=manual
+
+		-In manual mode highlight some text and create a fold by pressing z -> f
+		-To open a fold press z -> o
+		-To close a fold press z -> c
+		-To toggle between opening a fold and closing a fold press z -> a
+		-To delete all folds recursively (delete a fold and all the folds inside a fold) press z -> D		
+		-To delete only the inner fold press z -> d
+
+	-How to check fold method:
+		:set foldmethod
+		
+	-To see our folds at the left hand side of the column use the following command:
+		:set foldcolumn=1 
+
+	-Fold method "indent":
+		:set foldmethod=indent
+
+	-Fold method "marker":
+		:set foldmethod=marker
+
+Tips on folds: https://www.youtube.com/watch?v=f_f08KnAJOQ
+
+
+
+How to switch case of a letter :
+~
+
+How to swap places between to letters that are next to each other:
+x -> p

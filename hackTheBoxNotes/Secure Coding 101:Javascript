@@ -1,0 +1,5 @@
+*** Dead Code ***
+Unpack all the packer functions and compare the functions and see if they only reference themselves and not any other functions. If not a single one of all the references to the function point to a different function in the program that is not a sub function of the referenced function and solely points to sub functions within the referenced function then chances are it is dead code.
+
+*** Encrypted Array ***
+The encrypted array is essentially just shifted the array (shifting pops the index at the beginning of the array and returns it) then it pushes that index back into the array to rearrange the items in the array.

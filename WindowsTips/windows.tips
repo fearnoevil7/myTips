@@ -1,0 +1,3 @@
+Use net use command to establish a connection from a windows host to a share hosted on a foreign host.
+
+A good way to bypass security on windows is to go to virus and threat potection and turn everything off then add whatever file or folder to the exculsion list.

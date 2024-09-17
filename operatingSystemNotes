@@ -1,0 +1,170 @@
+*** Process Communication ***
+Shared Memory Systems and Message Passing Systems facilitate communication between two processes on a computer locally.
+
+	- In a shared memory system the process that wants to communicates writes to a shared memory address and the other process reads from the shared memory address
+
+
+
+Remote Procedure Calls(RPC) is a protocol that a program can use to request a service from a program located in another computer over the network without having to understand the network's details.
+
+	- It is similar in many respects to InterProcess Communication(IPC) mechanism.
+	- However because we are dealing with an environment in which the processes are executing on separated systems, we must use a message based communication shceme to provide remote services.
+		-IPC uses messagage based communication scheme
+		- In message passing systems the process that wants to send a message will send the message as a packet of data to the kernel and from the kernel it goes to the process to which that message was intended to.
+
+	- In contrast to the IPC facility, the messages exchanged in RPC communication are well structured and are thus no longer just packets of data.
+	-Each message is addressed to an RPC daemon listening to a port on the remote system, and each contains an identifier of the function to execute and the parameters to pass that function.
+	- The function is then executed as requested, and any output is sent back to the requester in a separate message.
+
+
+*** CPU Scheduling ***
+CPU scheduling is the basis of mulitprogrammed operating systems.
+
+By switching the CPU among processes, the operating system can making the computer more productive.
+
+In a single-processor system, only one process can run at a time.
+	-Any others must wait until the CPU is free and can be rescheduled.
+		- The objective of multiprogramming is to have some process running at all times, to maximize CPU utilization.
+		- A process is executed and a the CPU would have to wait until the process finished executing, typically for the completion of some I/O request.
+			- In a simple computer system, the CPU then just sits idle. All this waiting time is wasted, no useful work is accomplished.
+
+			- With multiprogramming, we try to use this time productively.
+				- Several processes are kept in memory at one time.
+			- When one process has to wait, the operating system takes the CPU away from that process and gives the CPU to another process and this pattern continues.
+
+
+*** Process Synchronization ***
+A cooperating process is one that can affect or be affected by other processes executing in the system.
+	- Cooperating processes can either:
+		- directly share a logical address space (that is, both code and data)
+		- or be allowed to share data only through files or messages
+Concurrent access to shared data may result in data inconsistency!
+Cooperating processes will be sharing a region of data so they will be able to access and manipulate that shared data. If multiple processes are concurrently trying to manipulate data then that will lead to data inconsistency. If two or more processes are trying to manipulate the same data at the same time then that will definetly lead to data inconsistency.
+
+Process Synchronization facilitates the orderly execution of cooperating processes that share a logical address space. So that data consistency is maintained.
+
+	-Producer Consumer Problem
+		- A producer process produces information that is consumed by a consumer process.
+			- For example, a compiler may produce assembly code, which is consumed by an assembler. The assembler, in turn, may produce object modules, which are consumed by the loader. Or when a server creates a web page that is then consumed by the client with their browser.
+		- One solution to the producer-consumer problem uses shared memory.
+			-To allow producer and consumer processes to run concurrently, we must have available a buffer of items that can be filled by the producer and emptied by the consumer.
+			- This buffer will reside in a region of memory that is shared by the producer and consumer processes.
+				- Two kinds of buffers:
+					- Unbounded buffers: Places no practical limit on the size of the buffer. The consumer may have to wait for new items, but the producer can always produce new items.		
+					- Bounded buffer: Assumes a fixed buffer size. In this case, the consumer must wait if the buffer is empty, and the producer must wait if the buffer is full.
+
+
+Lets say you have two processes that have to change increment and decrement a counter variable. Every time a producer process produces it increments the counter++. Then lets say every time a consumer process consumes something it decrements the counter--. 
+
+Time T0: producer | execute | register#1 = counter 	    		  | { register#1 = 5 }  |
+Time T1: producer | execute | register#1 = register1 + 1 		  | { register#1 = 6 }  |
+Time T2: consumer | execute | register#2 = counter 	    		  | { register#2 = 5 }  | 
+Time T3: consumer | execute | register#2 = register#2 = register#2 - 1    | { register#2 = 4 }	|
+Time T4: producer | execute | counter = register#1 			  | { counter = 6 } 	|
+Time T5: consumer | execute | counter = register#2 			  | { counter = 4 } 	|
+	- We would arrive at this incorrect state because we allowed both the producer and the consumer processes to manipulate the variable counter concurrently.
+		-If we would have allowed one of them to complete and then let the next one do its work we would not have arrived at this situation.
+	- A situation like this, where several processes access and manipulate the same data concurrently and the outcome of the execution depends on the particular order in which the access takes place, is called a Race Condition.
+	
+Clearly, we want the resulting changes not to interfere with one another. Hen ce we need Process Synchronization.
+
+
+*** The Critical-Selection Problem ***
+Consider a system consisting of n processes { P0, P1, ..., Pn }.
+	- Each process has a segment of code, called a critical section
+		- In which the process may be changing common variables, updating a table, writing a file and so on.
+
+	- Whenever a process is accessing the shared memory and making some manipulations in the shared memory then the code that is responsible for doing that particular operation is known as a Critical Section.
+	- When one process is executing in its critical section, no other process is to be allowed to execute in its critical section.
+		- That is, no two processes are executing in their critical sections at the same time.
+
+The critical-section problem is to design a protocal that the processes can use to cooperate.
+
+There are certain rules that have to be followed by processes whenever they are accessing their critical section or operating in their critical sections:
+	- Each process must request permission to enter its critical section.
+	- The section of code implementing this request is the entry section.
+	- The critical section may be followed by an exit section
+	- The remaining code is the remainder section
+
+A solution to the critical-section problem must satisfy the following three requirements:
+	- Mutual exclusion:
+		- If process P, is executing in its critical section, then no other process can be executing in thier critical sectioins.
+	- Progress:
+		- If no process is executing in its critical section and some processes wish to enter their critical sections, then only those processes that are not executing in their remainder sections can participate in the decision on which will enter its critical section next, and this selection cannot be postponed indefinitely.
+	- Bounded waiting:
+		- There exists a bound, or limit on the number of times that other processes are allowed to enter thier critical selections after a process has made a request to enter its critical section and before that request is granted.	 
+			- Prevents processes from getting starved out by other processes in the event that something like that occurs..
+
+*** Semaphores ***
+- Semaphore proposed by Edsger Dijkstra, is a technique to manage concurrent processes by using a simple integer value, which is known as a semaphore.
+- Semaphore is simply a variable which is non-negative and shared between threads. This variable is used to solve the critical section problem and to achieve process synchronization in the multiprocessing environment.
+- A semaphore S is an integer variable that, apart from initialization, is accessed only through two standard atomic operations: wait() and signal().
+	- wait()	-> P [from the Dutch world proberen, which means "to test"]
+		- Definition of wait():
+			P (Semaphore S) {
+				while( S <= 0 )
+					; //no operation
+				S--;	
+			}
+
+				- While a process is in its criticial section it will decrement the Semaphore
+				- If the semaphore is less than or equal to 0 than the process will hang (denoted by the semi-colon)
+				- When the semaphore is greater than 0 then the while loop will break and the process  will cease to hang and decrement the semaphore so it can commence operating in its critical section.
+			
+
+	- signal()	-> V [from the Dutch word verhogen, which means "to increment"]
+			V (Semaphore S) {
+				S++;
+			}
+				- When a process is finished using the semaphore it will signal it is done by incrementing the Semaphore so another process that is awaiting its turn to operate in its critical section can begin doing so.
+
+
+- All the modifications to the integer value of the semaphore in the wait() and signal() operations must be executed indivisibly. That is, when one process modifies the semaphore value, no other process can simultaneously modify that same semaphore value until or unless that process has completed its modification.
+
+- There are two types of semaphores:
+	- Binary Semaphore:
+		- The value of a binary semaphore can range only between 0 and 1. On some systems, binary semaphores are known as mutex locks, as they are locks that provide exclusion.
+			- If the value of the semaphore is 0 then the shared resource is being used by some other process and the currently requesting process will have to wait. Or if we talk in terms of critical selectioin... when the semaphore is 0 that means some process is already operating in its critical section and the requesting process will have to wait. Likewise if the semaphore is set to 1 then the requesting process is allowed to access the shared memory e.g. operate in its critical section.
+
+	- Counting Semaphore:
+		- Its value can range over an unrestricted domain. It is used to control access to a resource that has multiple instances.
+			- Meaning it can have multiple values... it can be 1,2,3,4 and so on.  
+			- When a resource has more than one instance that means that it can be accessed by more than one process at the same time.
+				- For example, if there are two instances of a resource it can be accessed by two processes at the same time.
+					- In this example, we would set the value of our counting semaphore to two.
+
+*** Disadvantages of Semaphores
+- The main disadvantage of the semaphore definition that was discussed is that it requires busy waiting.
+	- While a process is in its critical section, any other process that tries to enter its critical section must loop continuously in the entry code.
+- Busy waiting wastes CPU cycles that some other process might be able to use productivley.
+- This type of semaphore is also called a spinlock because the process "spins" while waiting for the lock.
+
+To overcome the need for busy waiting, we can modify the definition of the wait() and signal() semaphore operations.
+	- When a process executes the wait() operation and finds that the semaphore value is not positive, it must wait.
+	- However, rather than engaging in busy waiting, the process can block itself.
+	- The block operation places a process into a waiting queue associated with the semaphore, and the state of the process is switched to the waiting state.
+	- Then control is transferred to the CPU scheduler, which selects another process to execute.
+
+Though we implement semaphores through a waiting queue this can technique can lead to Deadlocks and Starvations.
+	- The implementation of a semaphore with a waiting queue may result in a situation where two or more processes are waiting indefinitely for an event that can be caused only by one of the waiting processes.
+		- The event in question is the executiion of a signal() operation. When such a state is reached, these processes are said to be deadlocked.
+		
+	Process#0			Process#2	
+	wait(S);			wait(Q);
+	wait(Q);			wait(S);
+	   .				   .
+	   .				   .	
+	   .				   .
+	signal(S);			signal(Q);
+	signal(Q);			signal(S);
+
+	- Lets say process 0 executed the wait() operation on the S semaphore so now no other process can operate in the critical section of the S semaphore.
+	- Lets say process 1 executed the wait() operation on the Q semaphore so now no other process can operate in the critical section of the Q semaphore.
+	- For the next step in Process 0 it happens to need to execute the wait() operation on the Q semaphore so it can execute in the critical section governed by the Q semaphore in order to finish executing as a process.
+	- For the next step in Process 1 it happens to need to execute the wait() operation on the S semaphare to operate in the critical section governed by it.
+	- Neither Process 0 or Process 1 can advance in their execution unless they canexecute the wait function with the required semaphores but they are both being occupied by each other... this creates whats called a deadlock.
+
+
+
+*** Mutex ***
+

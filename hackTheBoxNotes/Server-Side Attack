@@ -1,0 +1,2 @@
+***SSRF Exploitation Example***
+	- /proc/self/environ file is a file that contains several environment variables such as REMOTE_PORT, HTTP_USER_AGENT and more. For most Linux Operating Systems the file shouldn't be accessible from non-root users. This is why this technique is old and on upgraded systems, it will not work.

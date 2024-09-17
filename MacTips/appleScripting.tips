@@ -1,0 +1,30 @@
+Prepend the following to every apple script:
+#!/usr/bin/osascript
+
+How to run an apple script:
+$ osascript <apple_script>
+
+
+Apple Scripting Tips:
+https://stackoverflow.com/questions/48915301/how-to-pass-multiple-arguments-to-osascript
+https://www.youtube.com/watch?v=MOdIFEU1WV8
+
+https://discussions.apple.com/thread/251293948?sortBy=best
+
+https://developer.apple.com/library/archive/documentation/LanguagesUtilities/Conceptual/MacAutomationScriptingGuide/AutomatetheUserInterface.html
+
+http://macosxautomation.com/applescript/uiscripting/index.html
+
+
+How to select menu bar items with a gui script:
+https://apple.stackexchange.com/questions/311465/how-can-i-get-access-to-menu-bar-item-in-bartender-3-using-applescript
+
+Scripting Apple Notes:
+https://apple.stackexchange.com/questions/225938/notes-script-to-access-notes-in-specific-folder
+
+http://www.macosxautomation.com/applescript/notes/03.html
+
+https://discussions.apple.com/thread/252666494?sortBy=best
+
+Passing output from Script to alfred environment variable:
+https://talk.automators.fm/t/alfred-passing-variable-from-applescript-step-to-notification-step/5863/2

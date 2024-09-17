@@ -1,0 +1,318 @@
+** Threads **
+- A thread is just a function that is executing code that is independent of other functions executing the same or different code.
+
+- A thread can be thought of as an abstraction over a processor
+	- There are many threads, a lot less processors
+
+	**Sockets, Cores and Logical Processors**
+	- The Socket is the physical chip you stick into a motherboardb
+		- Each socket has a bunch of cores
+			- A core is a separate computation unit that is provided as part of the way processors work today.
+				- A core is a single CPU so to speak (Windows Internals) (Check at the bottom of the Performance tab in taskmanager)
+					- At some point the cpu manufacturers started to create more cores because they couldnt increase the frequency(hertz) too much because of problems related to heat disippation and other problems related to the semi conductor technology
+
+				- One of the innovations introduced at that time was the idea of a hardware thread.
+ 				- Hyper-threading: Every single core has two hardware threads that can run at the same time
+					- However they are not completely independent but they can do some work independantly.
+ 						- Similar technology exists in AMD & ARM64
+							- When people mention logical processors they really mean hardware threads
+
+	**Criteria deciding which threads should run first and which ones should run later
+	- Priority
+	- Affinity
+		- The correlation between threads and processor they are allowed to run on. Every thread can run on any available processor, but we can, in fact, limit that and there are a few reasons one might one to do that
+	- Adjustments:
+		- These adjustments are there in order to make things a bit better in some sense, a bit more balanced. Because on one hand we have priorities, which are unfair. And on the other hand priorities are unfair by definition, but still, in some cases, we might want to perform some adjustments to thread priorities in order to make the system more fair in one respect or another.
+
+	**Thread Priorities**
+		- Thread priorities are between 1 and 31 (31 being the highest)
+			- Priority 0 is reserved for something called a zero-page thread(s)
+				- zero-page threads are threads that belong to the memory manager that have some very specific role.
+		- The Windows API mandates thread priority be based on a process priority class (base priority) and some offset within or around that base priority
+			- You must use the set thread priority API to change a thread's priority around that base. You cannot just set the priority to an absolute value.
+
+		**Priority Class**
+			- Normal Priority Class
+	 			- First base priority of a process which is also the defualt called normal
+					- In this case that would be: 8
+				- If one were to use the set thread priority API to manipulate the thread's priority within one of these processes, they can make the following changes.
+					- Increase the priority by 1 or by 2, decrease it by 1 or 2, or they can have two extreme values known as saturation values, which are 15 and 1. That's it.
+
+			- Above Normal Priority Class
+				- The base priority is 10, and can be increased to 11 or 12 or decreased to 9 or 8. Can also have saturation values set to 15 or 1.
+
+			- High Priority Class
+				- The base priority is 13, which can be increased or decreased by one or two. Can also have saturation values set to 15 and 1.
+					- In this case, we are actually limited to only six levels.
+			- Below Normal Priority Class
+				- The base priority is 6
+				- Can be increased or decreased by 1 or 2 and have saturation values set to 1 and 15.
+			- Idle Priority Class
+				- Refered to as "low priority class" by tast manager.
+				- The base priority is 4
+					- Can be increased or decreased by 1 or 2 and have saturation values set to 1 and 15.
+
+			- Realtime Priority Class
+				- The base priority is 24, which is very high.
+				- Can get any priority between 16 and 31.
+				- Realtime Priority Class can only be run or used by processes running as elevated with administrator.
+					- This is because these high priorities are also priorities used by many kernel threads.
+						- If too much time is spent using threads running in those priorities it might prevent or starve certain kernel threads.
+				- In the other normal user priority classes adjustments may occur but with realtime priority classes adjustments never occur
+
+
+	**Priority-Related APIs**
+		User Mode
+			- Process: SetPriorityClass
+				- Changes a process priority class to one of the 6 possible priority classes.
+
+			- Thread: SetThreadPriority
+				- Change the base priority of the thread somewhere around the base priority of the process
+				- 7 levels for all priority classes except Realtime
+
+		Kernel Mode
+			- KeSetPriorityThread
+				- Can set the dynamic priority of the thread by just setting it to an absolute value.
+				- Changes the dynamic priority of a thread by providing a kernel object, the thread kernel object, rather than a handle, and the absolute priority.
+			- KeSetBasePriorityThread
+				- Can be used to set the base priority of a thread.
+
+	**Background Mode**
+		We know that we have many processes running on a typical Windows system. Some are more important than others. Priority is just one way of specifying the importance of the process or threads running within the process, but there are some other aspects. For example, suppose you have an application that is tasked with backing up your data to some cloud or to some server like OneDrive or something like this. Now these kinds of processes run almost all the time. They're kind of scanning whatever is going on in the I/O system, in the file system, seeing if anything has changed, and so on. And you don't want these applications to take up too much CPU time and also not too much I/O bandwidth. If the backup were to be slightly delayed, that's probably not going to be a very problematic thing. And you want the majority of the resources, CPU, I/O, and memory to be available for the processes that you care about more such as the process we're currently working with. A process can say well, I know that I'm not that important, I'd like to go into background mode. And if the process goes into background mode the priority of all the threads in the process drop to 4, and also the I/O priority and something called memory priority drop as well.
+	And so if there's any contention, there's lots of I/O activity, for example, that particular process will be last in line so to speak, and I/O would be preferable or provided to other processes with a higher priority. This can also be specified by a thread, so a thread can do that on a thread-by-thread basis, not necessarily for the entire process using something very similar instead. And so what happens is the thread priority drops to 4, and the I/O priority drops to a lower as well as memory priority. The Windows API only allow us to specify that for the current process or current thread, but the native API, the one implemented by ntdll allows a caller to specify that for other processes or threads as well.
+
+		Memory priority has to do with the importance of the physical pages used by the process. The lower the memory priority the less important that processes pages are which means that if the system runs low on physical memory those pages belonging to those processes with low memory priority are the ones that are going to be moved first out of the page file so that it can be used by other processes.
+
+		- Processes and individual threads can enter (and exit) background mode
+			- For processes, SetPriorityClass with PROCESS_MODE_BACKGROUND_BEGIN / END
+			- For threads, SetThreadPriority with THREAD_MODE_BACKGROUND_BEGIN / END
+
+		- In background mode, thread priorities drop to 4 and I/O priority drops to Low
+		- Can only be specified for the current process / thread
+
+	**Simple Thread Scheduling**
+	In general, thread schedule is a very complex thing because you have to contend with several aspects, some of them conflicting. For example, you might have multiple processors. You also might have hyperthreading active on processors. So, when you have a thread ready, should you give it to another logical processor of the same core or maybe give it to a different core? And if you have two logical processors as a very simple example, one of them is running some thread, and then you have another thread that wants to execute code, should you wake up the other processor in order to give that thread a CPU to run on? Perhaps it's better to wait a little bit until the first thread goes into a wait state, which would allow the first processor, which is already ready to go and running to be used for the second thread because you might want to save on energy. So these things are sometimes conflicting.
+	In general, it is a very complex problem. But we can start small with a case where we have a single processor on the system. Obviously, systems today have more than one processor, but even with the one processor case, the foundations or the fundamentals of scheduling are the same. Of course there are some tweaks and some extra complexity when we have multiple processors.
+	So here's what happens in this particular example. We have a single CPU, and we have seven threads that are in the ready state. Remember that the ready state means that the thread wants to run. It wants to execute code. On the other hand, there might be hundreds or thousands of threads, which are in the waiting state somewhere here, (which is very typical on a Windows system) that don't want to run right now. So the kernel scheduler doesn't care about those threads at this point in time. So now we have several threads that do want to run and unfortunately, there's only one processor, which means that only one thead can be in the running state at a time. So what does it do? The first thing it does is arrange the threads in descending levels of priorities, so they're sorted.
+	We have threads 1 and 2 here with a priority of 31. Thread number 3 with a priority of 16. Threads 4, 5, and 6 with a priority of 8. And thread 7 with a priority of 4. So the first thing it does is say... Ok who's the thread with the highest priority? There are two of those threads, 1 and 2. Let's just grab the first one in the list. Let's say that's thread number 1, and it becomes the running thread. It's currently executing code on the processor. For how long? It's going to get something called the time slides or quantum which we discuss very soon in the next slides. But let's just assume for discussion purposes this is 30 ms or roughly 30 ms. So now the thread runs for 30 ms. And assuming it has lots of work to do, and it's still not done, then the kernel will forcefully perform a context switch, removing thread number 1 from the processer and bringing it back to the ready state because it's not done doing its thing. Then the kernel puts thread number 2 in its place because thread number 2 has the same priority, so it's entitled to have the same kind of authority over processors. So it gets its own quantum, its own, let's assume 30 ms. What happens next? Assuming thread 2 has still lots of work to do, another context switch occurs, and thread number 1 becomes the running thread, whereas thread 2 goes back into the ready state.
+	So the basic rule is priority matters. The higher the priority, the more likelihood for a thread to run. And essentially, for this kind of system, if threads 1 and 2 want to run all the time, all the other threads will starve and will never get any CPU time. It's not fair perhaps, but hey, priorities are unfair by definition. Fortunately threads do not run forever. Typically, threads do something, and then they go into a wait state, waiting for something to occur. Maybe performing an I/O operation, waiting for the operation to complete, maybe waiting on some kernel object to become signaled, maybe waiting on the window message if handling some kind of user interface.
+	Whatever the reason might be, let's assume for demonstration purposes, that threads 1 and 2 go into the waiting state, joining the other thousands of threads that are there waiting as well. So now the next thread in line that has the highest priority is thread number 3 with priority 16, so it becomes the running thread. It gets its own quantum. Assuming it still has stuff to do and the initial quantum has elapsed, it's going to get another quantum because it's the only one in its level. So this thread can essentially run for as long as it likes unless something changes. For example, suppose thread number 1 gets whatever it was waiting for. When that happens, thread number 1 goes into the ready state and immediately to the running state, preempting thread number 3, which goes back to the ready state in case that it still has work to do. So again, this demonstrates the fact that priority matters. Thread number 1 has a higher priority, so it preempts the lower priority thread. Which, in this case, is thread number 3.
+	Lets assume that threads 1, 2, and 3 all go into the waiting state. So at this point, threads 4, 5, and 6 are the highest in priority so each would get their own quantum, assuming they have lots of work to do. And because they're considered the same, they all have the same priority, they're going to round robin each one, getting its own quantum. So that's the basic idea of scheduling. And for a single CPU system, that is exactly how scheduling works. Because there is only one processor we don't have to worry about power management.
+	Now obviously there are still come challenges here. Thread number 7 with a priority of 4 might not get a lot of CPU time because there's lots of activity going on with higher priority threads. However we still might want to give thread number 7 some chance to run a little bit from time to time to make some kind of forward progress. So this is one of the reasons a boost might occur (e.g. dynamic priority). In this particular case, this is because of a starvation scenario. If thread number 7, is not able to run for at least roughly 4 seconds, it is going to get its priority boosted to level 15 and will get a single quantum running at that level because priority 15 has a much higher chance of getting CPU time. Once it gets it, it can run for, at most, one quantum in that level and then the priority will drop back immediately to the original priority.
+
+	**Thread States**
+	By now, we know there are three main ready, running, and waiting but there's also some other states that might be interesting to look at.
+
+		Init (0). This is the state where the thread is at when the thread has just been created. Its been initialized. It's stack has been created, and so on. It can't really do anything at this point. And then, assuming the thread is not created in a suspended state, then it goes into the ready state. The ready(1) state says, hey, I want to run code now. I would like to get the processor as soon as possible. This is where the scheduler notices the thread. Technically behind the scenes, there are actually two states called ready(1) and deferred ready(7). They mean exactly the same thing but they are two states used in order to kind of limit some of the contention logging that is happening in the thread database there, but it's not really important for understanding nour purposes. Thus we are gouping these states in the same state.
+
+		So once the thread is eligible to run, it's going to be in the standby(3) state, which means it's going to be the next thread that is eligible to run. However, if a thread with a higher priority becomes ready, then it might go back to the ready(1) state. However once the process becomes available it is going to move to the runnin(2) state where it can actually execute code on the processor. From here there are two things that can happen after the process is finished executing in the running state. One option is that the thread will simply be done and go into a terminate(4) state. (Technically it's possible to get into the terminate(4) state from any other state if someone calls a termination API such as terminate thread.)
+
+		The other option is a preemption. Maybe the quantum has ended and another thread with the same priority is also ready and supposed to be running, or maybe the preemption happens because a higher priority thread became ready and removed that current thread from the processor. Whatever reason happend here, the thread goes back into the ready(1) state. And hopefully, it will get another CPU, maybe the same one, maybe different one sometime later.
+
+			- Another option is that the thread doesn't want to run anymore, it wants to wait for something to occur such as performing an I/O operation, and waiting for that I/O operation to finish. So at that point, the thread has nothing to do and goes into a wait(5) state. From the waiting(5) state, the most common thing to occur is going back to the ready(1) state when whatever the thread was waiting for has finally arrived. However there is another state that the thread might go into temporarily, a very short-lived state, called transition(6). A transition(6) state happens in the following case.
+
+			- As we see in the next module, every thread has a kernel stack, and the kernel stack is normally in RAM. However, when a thread is in a wait(5) state for a long time, especially if the entire process it's apart of, if all the threads there are in a waiting(5) state for a long time, the kernel stacks of these threads might be paged out by the kernel to have more RAM available for other processes that really need it. However when the threads in that process suddenly need to start executing code, then the kernel stacks are transferred back into physical memory from the page file they were temporarily placed in. Kernel stacks cannot run code unless in physical memory so once they are swapped back into the RAM from the page file the kernel stacks can then execute code. So this is the entire state machine of threads. The numbers in parenthesis (next to the states) are the internal state numbers as are being managed by the kernel.
+			- We will be able to use certain tools to see those state numbers to figure out what the thread is doing and which state the thread is at any given point in time.
+
+
+	**The Scheduler**
+		The kernel scheduler works in two unrelated axes, so to speak. One of them is using a timer. So the timer wakes up the scheduler every so and so often. This is used to check whether the current running thread on a processor has exhauseted its quantum. Of course, the scheduler has to wake up on every processor to see whatever is happening on that processor, whether the thread that is running on that processor has exhausted its quantum. And we'll see that the default time that it uses, the default interval, is roughly 15.6 ms, but I have a few more things to say about that in the next slide.
+
+		The other axis the schedule works along is when certain events happen. When certain events happen the scheduler has to be invoked. For example if there is an I/O completion, so some I/O operation is completed, it means that the thread that was waiting on that I/O operation now has to go from the waiting state to the ready state and that might require changing something because maybe that thread has a high priority, and you might need to preempt another thread that is currently running on some processor. If a thread changes priority for higher or low priority, it doesn't matter, it could mandate a change in scheduling state.
+
+		Same goes or a case when the waitable object's state changes. For example, if i set an event object, then threads waiting on that event object now have to wake up which means, again, the scheduler might need to do some kind of changes. If a thread voluntarily enters the wait state or calls sleep or something like that, then obviously, the thread says, I don't want to run at this point. So now the processor is free to perhaps run a different thread, and so the scheduler has to see whether there's another thread that is waiting to run in the ready state wants to get the processor, and give that processor to that thread.
+
+		So essentially the scheduler is just a bunch of functions that work in these two unrelated axes. One of them based on timer and the other one is based on things that happen, essentially, certain APIs being called.
+
+***The Quantum***
+	So what about the quantum, the time slice every thread gets when it executes, and that would be the maximum time it can run before another thread that has the same priority also wants to run? And so we know that we have a tiimer that ticks in specific intervals, and the typical interval is 15.625 ms. In fact, there's a tool from SysInternals that can easily show us this number.
+
+	Now, the way the quantum is built today is that the default quantum on client systems, client systems such as Home Edition, Pro, Enterprise, and so on is two clock ticks, so its roughly 31 point something milliseconds. The default server quantum is 12 clock ticks which means it's roughly 186 something milliseconds. You might be wondering, why do we have a longer quantum on server systems? And the basic idea is that the server machine is typically a machine that is stored in some server room. It might not be used interactively by anyone and mostly host the services that listen to client requests. And once the client request comes in, having a longer quantum provides better opportunity or larger I would say, ability to serve the clinet in a single quantum. That's more efficient than having to suffer several context switches because the operations might take longer than the client quantum.
+
+	Now normally, these are the quantums that we get, and we can change them by using the registry. There's some tweaks we can do, which I won't show you here but you canfind more details in the Windows Internals book or a job object. The job object, when running on server systems, allows some flexibility in the quantum for processes that are apart of that job.
+
+	Another feature that occurs only on client machines is something called quantum boosting. The idea of quantum boosting is that for the foreground processi (the foreground process is defined as the process that one of its threads currently the one that's created the window that is currently being used by the users, so it's currently active), and this process meaning that all of its threads in that process get, by default, triple quantum. Instead of 31 ms roughly they get 90 ms. The rationale here is that because this is a process the user cares about more, then perhaps it's a good idea to let thread there run longer if there are other threads with the same priority also waiting to run.
+
+	So if I have something like Word and Excel running at the same time and I'm currently looking at Word, working with Word, and Excel is calculating the state of all the protons in the universe or something, but it's not part of the acdtive window right now, then I expect Word to behave nicer to me as a user. So if I do something with Word, I expect to get better responsiveness. And this happens because of quantum boosting and also because the UI threads get plus two bonus as priority boosts when they recieve a message, which again, makes sense on the client machine where there's typically an interactive user working with the machine.
+
+
+
+***Windows Multiprocessing***
+	Symmetric Multiprocessing (SMP)
+
+		Windows supported, back from day one, something called symetric multiprocessing. Symmetric multiprocessing means that all processors are essentially the same, and they have the same kind of access, the same level of access to memory. There's no master slave of any form or any kind of specialty to one process or another. And the basic architecture from the very first Windows NT version was to support 32-bit 32 processors where each bit in a 32-bit word was there to represent the existence of a processor. When 64-bit systems came into the fold, then, of course, that was naturally extended to 64-bit and 64 processors.
+
+		However starting with Windows 7, Microsoft wanted to support even more than 64 logical processors. In fact, Windows 7 64-bit and the server version supported 256 logical processors. Windows 8 supports 640 logical processors. Windows 10 and 11 support even more. There's no real limit in terms of support. The only limit is what Microsoft can actually test.
+
+		And so the question is, how exactly are you doing all that? I mean, how is scheduling affecting the fact that we have so many processors? The actual number of processes, by the way, that you can use is based on licensing. The kernel doesn't really care. The kernel can handle any number of processors. It's just a matter of paying the appropriate amount of money to get perhaps a better or a higher level Windows version that officially supports the number of processes that you want to use. Now one of the things that Windows 10 added, and that was for the benefit of Windows Phone at the time that was running on Qualcomm processors, and that required some changes to the scheduler for certain cases known as "big.LITTLE".
+
+			- Windows 10 added support for Heterogenous Multiprocessing ("big.LITTLE")
+
+		The idea here is that on Qualcomm processors, you might have a processor that might have, let's say, eight cores, but they're not all the same. You have four big cores that consume more power, but they're more powerful and then you have four other cores, which are smaller, and less powerful, but they consume less energy. So now the system is not completely symmetric in the sense that not all processors are exactly the same. So it's not as easy to decide to which processor to give a thread to run, and that has to be based on other factors such as whether the phone or the device is connected to AC power, and the amount of battery remains, and so on.
+
+		So Microsoft had to support this idea, which is also needed today, in fact, because new processors from Intel/AMD also support this idea that you have a single socket that contains multiple core, but they're not all the same.
+
+*** Affinity ***
+	
+Multiprocessor Scheduling
+	- Multi CPU systems complicate things
+	- The only guarantee is that one of the highest priority threads is running on some CPU
+	- Power considerations and NUMA systems complicate things further
+		
+	With multiprocessor scheduling things get more complicated because other factors must be considered such as the preferred processors for a thread, the previous processor thread it was running on. That makes sense because maybe there's some data still cached in the CPU's cache. And, so of course, we also have to consider power management. The only guarantee that we get is that the highest priority thread in the system is running somewhere. That's the only thing we can know for sure. If we take into consideration power management and power conversation and numerous systems, things are even more complex. And, of course, all these algorithms are undocumented and for good reason. Because Microsoft tweaks these algorithms all the time to try to make the system better in one or another respect.
+
+	It's not really easy because Windows is the general purpose operating system, which means its supposed to be best for everything. But, in fact, the fact of the matter is that it can't be the best for anything. So it tries to be good enough for most tasks, and these things change, and nobody should take any dependency on these algorithms. But still, I want to give you a sense of the algorithms use in order to perform this multiprocessing scheduling.
+
+	First we have to consider some other aspects related to multiprocessing, which is related to something called affinity. There are two types of affinity. One of them is called soft affinity. Soft affinity is implemented using a concept called ideal processor. This is kind of the preferred processor a thread would like to run on. The idea of soft affinity means that if the thread is unable to run on the ideal processor, it might be able to run on a different processor. It's not mandatory, but it is preferable so that there's a very simple load balancing between threads and processors. So there's a default value that is being set on the process randomly that applies to the first thread, and then the next thread will get the next ideal processor, and so on. And it is possible to change that using the API, but this is fairly rarely used. When you have a hyperthreaded system, then the next ideal processor is selected from the next core rather than from the next logical processor, which is part of the same core.
+
+	And this is because we know that two logical threads that are logical processors that are part of the same core. They share level 2 cacche. So it's better to use different cores, if possible. This is how ideal threads are set up automatically if you're not calling SetThreadIdealProcessor.
+
+		Ideal Processor
+			- Every thread has an ideal processor
+			- Default value set in round-robin within each process
+			- A random starting value
+			- Can Override with SetThreadIdealProcessor
+			- On hyper-threaded systems, the next ideal processor selected is from the next physical core (not logical core)
+
+	The other kind of affinity is called hard affinity. This is something that the kernel has to abide by. So you can say, I would like this thread or this process, essentially all the threads in the process, to use a certain set of processors. And we can do that, like I said, on a thread-by-thread basis or on a process basis. And the thread affinity mask cannot escape the process affinity mask.
+
+	So in this case, if a processor is not available to run for a thread that requires to run that particular processor only, then tough luck. The thread will not run right now. So it means that, in some cases, it can actually hurt performance instead of doing something good. It really depends on what you're trying to do, and the only rule you should follow here is the only rule in performance, which means you have to measure. You can't really tell up front.
+
+	So you might have two very important processes on your system, and you might want to say, let me give one process half of the processors and the other process the other half of the processors so they can run the same processors, and so perhaps the data is going to be in the cache more frequently, which might improve performance. But there's really no way to tell these things up front, and it's best to measure to make sure it actually gives you the result that you think you're going to get.
+
+	There are other reasons why to use hard affinity. One of them is for testing purposes. Let's say I'm writing to my system on a powerful machine, but eventually the application or whatever I'm writing is going to run on other machines, which might be less powerful. How can I simulate part of that different kind of machines that are not as powerful as mine? And one option is to limit the affinity of the process or whatever that I'm writing. And so that could simulate something closer to a real scenario on other machines. You can also use that for other ways or other scenarios involving testing purposes such as for cases when you want to check for dead logs or other synchronization issues. So, I would say that this is not used for production that often, but it is used for testing.
+
+		Hard Affinity
+		A thread can run on any CPU unless hard affinity is set for that thread.
+			- SetThreadAffinityMask
+			- The mask is a bit mask of allowed CPUs to run that thread
+			- Defulat is process affinity mask, which defaults to all processors
+			- SetProcessAffinityMask changes priority mask for all threads in that process
+			- And future created threads in that process
+
+*** Processor Groups ***
+	As we've seen, the original NT version supported 32 processors and later on 64 processors. It was very easy to represent the existence of a processor by using a bit in the 64-bit world. But then when 256 processor are supported and were supported in windows 7. How would that be represented within the system? Increasing the word size doesn't really make any sense because that would be kind unlimited and doesn't really scale. So microsoft decided to add something called a processor group.
+
+	A processor group can contain up to 64 processors, and the thread can belong to one processor group at a time only. So essentially, if you have a Windows 7 machine or a higher machine that has, let's say, 256 logical processors and you'd like to create 256 threads to use this entire set of processors, you'll have to create these 256 threads. And then for each 64 threads, give them a different group, otherwise they'll all be cramped up and trying to use the processors in a single group. So you have to do something about it, and the SetThreadGroupAffinity function is the one to use to take a thread into a different processor group.
+
+	Normally, this is selected automatically by some random number for each new process being created, but every thread you create is part of the same group and lets you explicitly set it to run in a different group.
+
+	So today, Windows supports many groups. And again, this thing scales very well.It's just a matter of how many processors Microsoft can actually get on the system to test these things to make sure that, in fact, it works.
+
+		Processor Groups
+			- Original NT architecture allowed 32/64 processors at most
+			- Limit is extended by introducing processor groups
+				- A processor group can include up to 64 processors
+			- A thread is part of one processor group at a time
+				- SetThreadGroupAffinity
+			- Each process is assigned a default group in a round-robin fashion
+
+*** Multiprocessor Scheduling ***
+	Let's see the basic scheduling algorithm for multiprocessing systems, not taking into consideration power considerations or numerous systems. So let's say a thread that is ready. It means it's ready to go. It just needs a processor and the system's role here is to find a processor for this thread.
+
+	So the first question the scheduler asks is whether there is atleast one CPU which is idle, meaning doing nothing. So the next question is whether the previous processor that thread was running on is one of those idle processors. And if the answer is yes then great let's use it. Why?... because the previous processor is likely to have some data related to that thread. Maybe the part of the thread stack in its cache, so we get better performance. If that is not the case and that particular processor is busy running some other thread, then the next check is what about the ideal processor?
+
+	Remember the ideal processor is the way to kind of very roughly provide a load balancing scheme so that threads kind of spread out evenly across processors, unless there's some other more compelling factor. And so the next thing is to ask whether the ideal processor happens to be idle doing nothing. And if so then great let's grab it because that's the next best thing. We want to use the ideal processor in some way, use that parameter in some way. If this is not the case and the ideal processor is busy running some other thread, then the next question is, is the current processor idle? And so the processor in question might be the one that was woken up because the thread became ready, but it wasn't doing anything before. So, since this processor is already running some code, the schedular code is not for free. It has to run some instructions, which it's doing right now. So, if this processor really is not doing anything, it wasn't doing anything previously before some interrupt kicked in, then let's just use this processor and be done with it. And we're just already here. The processor is already awake. Otherwise, let's just find the first processor that is idle and just use it.
+
+	And of course we are guaranteed to find it because we started with the assumption with the first question, whether there's at least one processor, which is idle. And so we must find one of those and then that processor will be used to run this particular thread.
+
+	Going back to the beginning, if all processors are busy. So no processor is idle. Everyone is doing something, and running code for some thread. In this case, there's a check that looks whether the ideal processor is running a lower priority thread then the priority of the current thread we're trying to find a home for. If this is the case, we're going to preempt that other thread and make a context switch so that other thread goes back into the ready state, and our thread goes into the running state. But if the ideal processor is currently running a thread with a higher priority or equal priority, then we're not going to continue searching for another process that may be running a thread with with a lower priority. Instead, we're just going to add that thread into the ready queue for the ideal processor and let things continue in a natural manner.
+
+	So once the other thread goes into a wait state, for example, then our thread will perhalps get some time there. And the idea here is that all this scheduling code is really wasted time. We can have more elaborate algorithms used, but they take more time, and you have to balance these things out. And so, trying to look for another processor that might be running a thread with a low priority might be perhaps the right thing to do in an ideal world, but this is not an ideal world. And its better to say, well let's just minimize the code that the scheduler is executing, and let's continue on, and let the particular CPU that was running the scheduling code go about its business running some other thread that was interrupted at this point in time.
+
+	So this is just to give you a sense of how complex things are. Microsoft has to balance these two different kind of factors. One of them is to try to run thins in a more, I would say, correct way based on priorities and things like that, as they should.However, there is the other thing to look at such as power consumption and running code that perhaps we can minimize in some way, and that's another reason why these algorithms are continually being tweaked to make things better in some sense.
+
+
+***Threads and Stacks***
+	Stacks are use to store return addresses, and parameters to functions when calling functions. This, of course, depends somewhat on the calling convention. We know that in X64 convention, for example, the first four integer pointer parameters are passed in registers. And any subsequent paramaters, if there are more that four, they will be passed on the stack. The stack is also used to store local variables that are going to be used by the functio we're calling. And this is sometimes referred to as a stack frame. A stack frame is kind of the range of addresses that is used to store the parameters and local variables and return address of a function. So if you think about function A calling function B calling function C, you get multiple stack frames while the calls are in progress, and then these stack frames will be popped out when things start to return.
+
+- A user mode thread has two stacks
+	- User space and kernel space
+- Kernel mode threads has just a kernel stack
+
+
+**Kernel Stack**
+	Why is a kernel stack needed for user mode threads?
+One of them is that when you call a system call invoke one of these NT functions, for example from user mode going into the kernel, some arguments, as discussed earlier, are passed on the stack, and so the actual system call on the kernel side of things has to access those parameters, those arguments, and do something with it. So to make sure that user mode code or perhaps another thread in the same process that might garble those parameters, those agruments... the invocation of the system call also copies the parameters at the time from the user stack to the kernel stack for that same thread. And then the system call can work on those arguments from the kernel side of things. And because that's part of kernel space, this is completely inaccessible to user mode code. So nobody can garble or do anything with those parameters while the system call is in progress.
+
+	The second reason is the fact that interrupt or hardware interrupt can happen at any time. Some thing could just have been written into, some packet could arrive on a network card and so on. When something like this happens, interrupt is raised, and an appropriate device driver needs to execute its interrupt service routine to handle that interrupt. And so this could happen at any point in time while the thread running on that particular processor might be running user mode code or kernel code. There's really no way to tell, and interrupt is completely asynchronous. And the thing is that once the interrupt service routine gets control, it needs a stack to work on, and the stack always has to be in kernel space because it's a function running kernel space, and so it can't have any user mode code mingling with the stack.
+
+	Now the kernel stack is relatively small. As we'll see later, the user mode stack can be as big as you want, but the kernel stack for threads is relatively small. It's only 12 KB on 32-bit systems, 24 KB on 64-bit systems. One of the reasons for that is historical because in the early Windows  NT days, the RAM sizes that we had in those days were much, much smaller than they are today. So, that was kind of expensive to have. And one thing to note is that the kernel stack is always in physical memory.
+
+	Because the stack is small it's very easy to crash the system from the kernel side of things. For example, if I allocate an array of 10,000 integers, for example, on the stack, that's it. That's going to be a typical blue screen because I'm trying to allocate 40,000 bytes, but the stack is not that big. So, kernel developers know to be careful there, and if they need the big data structures or lots of memory, they should be allocating that on some heap instead of using the stack and holding just a pointer on the stack pointing to a big memory in one of the memory pools.
+
+	And as I mentioned, the kernel stack is always in physical memory. One of the reasons for that is when interrupts occur, the interrupt service routine runs in something called the high interrupt request level, a concept we might discuss in a future course. And this means that you can't access page memory from this kind of high RQL. So the kernel stack is always in physical memory when the thread is in the ready, standbye, and running states.
+
+	We've seen in the previous module that when the thread is in a waiting state, it is possible that the kernel will remove the kernel stack of that thread from RAM and page it out to the page file. But then whenever the thread gets whatever it was waiting for it can't go into the ready state immediately, but goes through a temporary state, the transition state, where the kernel stack is being pulled back from the page file back to RAM because when the thread gets CPU time, the kernel stack has to be in physical memory because interrupts can occur at any given point in time.
+
+
+*** User Mode Stack ***
+	There is much more flexibility with a user mode stack, as opposed to a kernel stack, and that's because user mode stack doesn't have to be in physical memory at all times. When we set up a user mode stack we can set it up to have almost any size, but we don't want to commit to actually allocating that memory up front because maybe we will not need the entire stack space. So we have two sizes here. One of them is the reserved size, that's the maximum size of the stack the stack can grow to, and then we have the committed size, which is the part that is currently allocated.
+
+	So what is reserved memory? Reserved memory just means there is a contiguous range of addresses that are reserved for a certain purpose, in this case, that purpose is a stack so that other allocations in the process will not use those addresses because the stack has to be contiguous in future memory. And by default, the numbers that are used are 1 MB as the maximum stack size where only the first page, 4KB, are committed. And the way the stack grows is using this mechanism called the guard page. A guard page is yet another committed page that has a special flag on it called PAGE_GUARD. And when the thread touches that memory, that page, it raises an exception that is caught by the kernel's memory manager, and that memory manager increases the stack size, pushing th e page guard forward or downwards in memory, if you look at that from the perspective of Intel/AMD architectures.
+
+	And so the stack continues to grow, as needed, and we don't waste memory up front becasue reserved memory is really cheap. There's nothing there. It's just a range of addresses that the memory manager know not to use for any other purpose in the process. 
+
+*** Changing User Space Stack Size ***
+	- Using linker settings as new defaults
+	- On a thread-by-thread basis in teh call to CreateThread / CreateRemoteThread(Ex)
+		- Can specify a new committed or reserved size, but not both
+		- Committed is assummed, unless the flag STACK_SIZE_PARAM_IS_A_RESERVATION is specified
+		- The native NtCreateThreadEx allows specifying both 
+
+	As we've seen, the user mode stack has a maximum value of reserved memory and initial committed size. These sizes can be changed. One way of doing that is by having a special or certain linker settings, essentially changing values in the portable executable header. And as we've seen, Explorer(Windows file manager... Explorer) has different values than VMMap(SysInternals tool), for example. It's also possible to change the stack size on a thread-by-thread basis when calling the CreateThread/CreateRemoteThread(Ex) or one of its variants in code. The default settings always apply to the first thread because it's always created for you by the kernel, but subsequent threads in the process can be configured differently by changing their stack size. The curious thing is that you can change the intial committed memory or the maximum reserve stack size, but you can't do both with the n ormal user mode APIs, which is kind of weird, I think.
+
+	And the way to do that is there is just one stack parameter in the CreateThreadset of functions. You just specify the number that you want, and then there's the flags parameter near the end of the function. If you specify 0, it's interpreted as the intital commit size. If you specify this weird flag name, STACK_SIZE_PARAM_IS_A_RESERVATION, the number is interpreted as the maximum size you would like. So we can't set both of them, and that's kind of annoying because the NtCreateThreadEx function, which is the native API being called by all these functions, does allow you to specify both of these numbers. Let's see how you can change this stuff within Visual Studio.
+
+*** Thread APIs (User Mode)
+	There are quite a few APIs available in user mode for working with threads. I'd like to briefly describe some of them. First, we want to create threads, and for that purpose, we have a few functions. The simplest one, which is the most common to use, is called CreateThread. And then if you want to create threads in different processes, we can use the CreateRemoteThread or the extended version of that function. So this is, for example, used by debuggers when they want to forcefully break into a target process.
+
+	They inject the thread into that process using CreateRemoteThread and then issue a breakpoint within and gain control. And then in order to manipulate threads once they exist, we get a proper handle to the threads. We can do certain things such as chang e or read their priority. We've seen an example of that in the previous module. We can suspend the thread and resume it later on. This, again, is sometimes useful, but in most cases, it's better to have the thread wait on certain objects in well-known locations rather than try to suspend or resume it in some random time of their executions. And there's the simple sleep function, which allows a thread to suspend itself for a specified amount of time. We can also manipulate or read the affinity mask. That's the affinity we discussed in the previous module.
+
+	We can get lots of information related to threads. Here are a few examples. One of them is GetExitCodeThread, which is available once a thread is terminated. We can get the exit code of the thread. Every thread has an exit code, very similar to processes that return a value from their main function. GetThreadTimes is a way to get timing information about the thread, when the thread was created, when the thread was terminated, if it was terminated, and the amount of time it spent running code in user mode and kernel mode. Then there's the option to set or get a thread description. This is just a textual desription that is used by debuggers, so it's easier to identify threads of our choosing. It's not a name that we can look up a thread by. Threads have IDs, and that's the only way to look up a thread if we need it.
+
+*** Multithreaded Primes Counter ***
+	The most important reason for creating threads in the first place is to be able to run code concurrently to utilize the multiple processors we have on systems today. So I'd like to show a more complex example of utilizing more processors and more threads, of course, in order to perform a calculation faster instead of using just a single thread. And what we want to do here is create something which is known as a multithreaded primes counter.
+
+	So let's say we have a bunch of numbers from some starting number to some ending number, and you want to count how many prime numbers are in this range. So a simple way of doing that is to just run a single loop that transforms the 'from number' to the 'to number', and then check each number to see whether it's a prime number, and if so, increment a counter. And that would definitely work, but it will be using a single processor at any given point in time, which is not as efficient as it can be.
+
+	Maybe we can use multiple threads and multiple processors to make it happen faster. So we'll use the following simple idea. Let's chunk the range into these pieces. Each one would be processed by a single thread. So, for example, if you want to use five threads, we'll just chop up the range into five pieces and give each thread its own range to work with. And, of course, there might be some leftover tail at the end because the division might not be exactly right, and we have to give that/those tail number(s) to some thread to work on.
+
+	And then we can get those results and combine the counts each one of these threads has accumulated to get the final result. And we'll do that in a way that would allow us to customize the number of threads we use in order to save the changes we get as we use more threads in relation to how long it takes to make this calculation.
+
+
+
+*** Thread Data Structures ***
+	The main data structure is called ETHREAD for executive thread, which is the one that represents all the details about a particular thread. This is very similar, at least in concept, to the EPROCESS data structure we have seen in a previous course. And just like with an EPROCESS, the first member of an ETHREAD is a KTHREAD, which stands for kernel thread, which kind of represents the lower-level aspects of a thread, which are the responsibility of the lower kernel rather than the upper executive.
+
+	And the only thing we can say for sure is that the KTHREAD is always the first member of the ETHREAD, and it's named TCB, that's the Thread Control Block. And again, it might seem similar, at least from a naming convention perspective, comparing that to processes where we have an EPROCESS that has a first member, which is a KPROCESS called PCB for Process Control Blocks.
+
+	So this is kind of similar, trying to give us a sense that there are two layers to a thread in terms of actual management, but the EHTREAD is the object that we need to refer to when looking at threads in general. Now, there is no global list of threads in the system. We know that there is a global list of processes in the system. Instead, threads are managed on the basis of their process, the process they're apart of. A thread is always part of some process. Threads can't live in a void, and that's why every EPROCESS has a ThreadListHead, a member which is a linked list pointing to the threads that belong to this particular process.
+
+	So whenever you enumerate all the threads in the system using some APIs Windows provides, essentially what that does, it works over all the processes, and for each process, it works over all the threads within that process.
+
+	In user mode, there is one data structure that is used to represent some information, which is mostly useful for user mode, which is known as a Thread Environment Block, or TEB, and we've seen a little bit about that in a previous course.
+
+
+*** Thread Pools ***
+	As we've seen, we can create threads using the CreateThread function and other extended functions, and that's fine for many scenarios. However, there are cases where we just need to run something, which is constrained in time on some other thread. Creating a thread has a cost. There's the kernel object, there's the stack. These things are not for free. And so there is a mechanism called thread pools, which allows us to say, hey, here's some work I'd like to do. I want that to happen on a different thread, not on my current thread, just do it on some other thread. I don't really care which thread that is. Just do it, and that's it.
+
+	And this is what thread pools are for. The thread pool is a way to have a bunch of threads waiting for work, and once work is available, they're going to run your code, some function really, on some other thread that is part of your process. And the basic idea is that the thread pool is dynamic. The number of threads can increase or decrease based on the load on the thread pool. So the thread pool can have multiple clients working with it. And every process has a different thread pool, which you can always use.
+
+	And the old function to use is called QueueUserWorkItem, which is still available, but there are newer APIs that have been available since the Vista days. And we can create in fact more thread pools known as private thread pools in the process because if you have just a single thread pool, it might be a bit problematic when you have different types of requests. Perhaps some requests are more important than others. If you just have a single thread pool, then every request goes to the same thread pool, and it's going to be handled as quickly as possible. But you don't have any way to provide any kind of hint as to the importance of your code. So if you create your own private thread pool, you can target that thread pool, give it some different properties, for example, different minimum and maximum threads to use. So that might be more appropriate for more complex scenarios.
+
+	The kernel object behind the scenes that manage the thread pools is called TpWorkerFactory(Thread Pool Worker Factory) or Worker Factory is the typical name you would find in kernel documentation. And there are a bunch of APIs a fairly significant list of APIs that work with these new private thread pools such as CreateThreadPool, CreateThreadpoolWork, and many others, which of course, are all properly documented.
+
+
+
+*** Other Aspects of Threads ***
+	So one thing that we've seen is that thread objects are dispatcher objects, they're waitable objects. You can call WaitForSingleObject on them, as we've done in the primes example. And the thread becomes signaled when it's terminated. And we use that to great effect in the primes code. Now by the way, the kernel also has a thread pool, in fact, a bunch of thread pools that are available for kernel code or device drivers running within the kernel. The main API to use is called IoQueueWorkItem, and it is fully documented.
+
+	And threads themselves can wait on other dispatcher objects. In the thread pool example, we've seen a thread waiting on an event object, which is one of those dispatcher objects.
+
+	Other waitable objects are semiphores, for example, jobs are also waitable objects. And so threads, in general, can wait using the WaitForSingleObject or the WaitForMultipleObjects function when you have multiple objects that you need to wait on until all of them become signaled or just one of them. There are also extended versions, which will not be discussed in this course.
+
+	On the kernel side, device drivers and kernel components can use the equivalent functions, KeWaitForSingleObject, KeWaitForMultipleObjects. The main difference is that these functions work with kernel objects themselves rather than handles, and that's because these are the underlying functions that eventually the user mode functions get to once they go over all the steps of performing the system calls behind the scenes.
+
+
+******** Windows Internals ********

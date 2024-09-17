@@ -1,0 +1,29 @@
+Docker CLI tools are installed at:
+/usr/local/bin
+
+Default Docker socket to be used:
+/var/run/docker.sock
+
+
+How to start docker service:
+# systemctl start docker.service
+
+How to stop and delete all containers:
+# sudo docker container rm $(sudo docker container ls -aq)
+
+How to delete all images:
+# sudo docker image rmi $(sudo docker images -q)
+
+How to gain access into the container terminal:
+# sudo docker start <container_id>
+# sudo docker exec -it <container_id> sh
+
+How to get ip address of a container:
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' container_name
+
+
+
+
+*** PHP and Nginx  ***
+https://blog.devsense.com/2019/php-nginx-docker
+

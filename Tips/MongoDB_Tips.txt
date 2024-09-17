@@ -1,0 +1,4 @@
+How to run MongoDB as a macOS service:
+brew services start mongodb-community@7.0
+How to stop MongoDB running as a macOS service:
+brew services stop mongodb-community@7.0

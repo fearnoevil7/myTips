@@ -1,0 +1,4 @@
+*** OAuth ***
+	
+	* redirect_uri Misconfiguration *
+		- Omit "http://" when using the payload to redirect the user to your ncat server

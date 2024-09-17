@@ -1,0 +1,58 @@
+import os
+
+pairs = {}
+
+*** Working with Dictionaries ***
+for key, value in os.environ.items(): 
+    print(f"{key}={value}")
+    pairs[key] = value
+
+
+
+*** One way to merge two arrays ***
+test_list1 = [1, 4, 5, 6, 5]
+test_list2 = [3, 5, 7, 2, 5]
+ 
+# using * operator to concat
+res_list = [*test_list1, *test_list2]
+
+Output: [1, 4, 5, 6, 5, 3, 5, 7, 2, 5]
+
+
+def split(word):
+    return list(word)
+     
+# Driver code
+word = 'geeks'
+print(split(word))
+
+Output: ['g', 'e', 'e', 'k', 's']
+
+
+
+*** Python String Interpolation ***
+
+n1 = 'Hello'
+n2 = 'GeeksforGeeks'
+ 
+# for single substitution
+print("Welcome to % s" % n2)
+ 
+# for single and multiple substitutions()
+# mandatory
+print("% s ! This is % s." % (n1, n2))
+
+
+Output: 
+Welcome to GeeksforGeeks
+Hello ! This is GeeksforGeeks.
+
+
+
+*** Decode URL encoding ***
+https://www.urldecoder.io/python/
+
+*** URL Encoding ***
+https://www.urlencoder.io/python/
+
+

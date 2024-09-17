@@ -1,0 +1,36 @@
+Create pull a alpine linux php image and have it run hello world.
+
+Create a docker file with the following:
+
+*****
+
+FROM php:alpine
+
+WORKDIR /app
+
+COPY ./test.php .
+
+CMD php test.php
+
+***
+
+Next run the following command to build a docker image:
+docker build -t <new-image-name> <DockerFile_Path>
+
+
+Execute the Docker image:
+docker run <new-image-name>
+
+
+Go into image shell mode:
+docker run -it <image-name> sh
+
+
+***TIPS***
+https://docs.docker.com/engine/reference/builder/#expose
+
+*** PHP and Nginx  ***
+https://blog.devsense.com/2019/php-nginx-docker
+
+** Laravel **
+https://buddy.works/guides/laravel-in-docker

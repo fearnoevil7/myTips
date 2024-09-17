@@ -1,0 +1,1 @@
+Do not use built in sed command in MAC OS X instead download gsed with homebrew package manager.

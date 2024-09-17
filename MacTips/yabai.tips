@@ -1,0 +1,17 @@
+yabai tutorial: https://www.youtube.com/watch?app=desktop&v=k94qImbFKWE&t=904s
+
+***Make sure that "skhd" service is started before attempting to start/use the "yabai" service
+
+How to start yabai service:
+# yabai --start-service
+
+How to restart yabai service:
+# yabai --restart-service
+
+
+You downloaded yabai and skhd
+The skhd config file is what is going to be in charge of handling the keyboard shortcuts.
+
+
+How to start skhd service:
+# skhd --start-service

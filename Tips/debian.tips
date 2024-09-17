@@ -1,0 +1,14 @@
+To see all running services:
+systemctl list-units 
+
+How to view only inactive services on debian:
+systemctl list-units --type=service
+
+How to view all running services on debian:
+systemctl list-units --type=service
+
+How to start docker service on debian:
+sudo service docker start
+
+How to stop docker service on debian:
+sudo service docker stop

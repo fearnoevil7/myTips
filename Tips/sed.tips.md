@@ -1,0 +1,4 @@
+- When passing parenthesis **(** as a literal character to the **grep** command you have to escape it '\(\(\('
+- When passing parenthesis **(** as a literal character to the **sed** command **DO NOT** escape it '((('
+- The following command matches **\** and **\\** and deletes all **\** but keeps **\\**
+    - sed -E 's/(\\)|(\\\\)/\2/g'

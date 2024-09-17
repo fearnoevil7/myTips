@@ -1,0 +1,3 @@
+How to stop scrolling bug in obsidian on macOS:
+	- Turn off full keyboard access in accessibility shortcuts pane
+	- Just setting pass through keyboard to on will not work you have to manually uncheck the checkbox from the accessibility shortcuts pane

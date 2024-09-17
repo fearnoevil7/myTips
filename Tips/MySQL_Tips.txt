@@ -1,0 +1,31 @@
+Make sure to start MySQL before attempting to sign into MySQL.
+
+How to start your MySQL connection?
+mysql.server start
+
+How to stop your MySQL connection?
+mysql.server stop
+
+How to sign in to MySQL?
+mysql -u root
+How to create a table with a foreign key?
+CREATE TABLE Songs (SongId INT NOT NULL AUTO_INCREMENT PRIMARY KEY, Name VARCHAR(100), Artist VARCHAR(100), Url VARCHAR(100), FOREIGN KEY (UserId) REFERENCES Users(UserId));
+
+
+How to create a user in MySQL:
+CREATE USER '<username>'@'localhost' IDENTIFIED BY '<password>';
+	ex) CREATE USER 'kurama'@'localhost' IDENTIFIED BY 'Password123';
+
+How to view all users in MySQL:
+Select user FROM msyql.user;
+
+How to grant a user privilges to use a specific database:
+GRANT USAGE ON *.* TO `exampleuser`@`localhost`
+
+How to grant all privileges on a specific database to a user:
+GRANT ALL PRIVILEGES ON `exampledb`.* TO `exampleuser`@`localhost`
+
+If the user account you are logged in as has SELECT privileges on the internal mysql database, you can see the privileges granted to other user accounts:
+SHOW GRANTS FOR '<user>'@'<host>';
+
+kurama: MyPassword123

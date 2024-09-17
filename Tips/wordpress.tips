@@ -1,0 +1,13 @@
+How to start wordpress:
+mysql.server start
+brew services start php
+brew services start httpd
+
+
+How to access wordpress admin console:
+localhost/wordpress/wp-admin
+
+Wordpress folder is at:
+/opt/homebrew/var/www/wordpress
+
+On macOS installing plugins and themes will sometimes throw errors due to OS permission: you have to chmod 777 the wp-content folder and every folder inside of that folder

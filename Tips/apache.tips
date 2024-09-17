@@ -1,0 +1,17 @@
+How to start apache server on macOS:
+brew services start httpd
+
+How to stop apache server on macOS:
+brew services stop httpd
+
+DocumentRoot = "/opt/homebrew/var/www"
+User _www
+Group _www
+
+Apache conifguration file is located:
+/opt/homebrew/etc/httpd/httpd.conf
+
+Apache is listening on port 80
+
+The url for apache is:
+localhost

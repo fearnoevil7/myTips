@@ -1,0 +1,10 @@
+*** Kernel Objects ***
+	Much of the Windows functionality is based around working with kernel objects. For example, if I want to access a the file in the file system, I would have to call the CreateFile Windows API to get back a handle that would allow me to talk to the file in the file system. And the file object created is an abstraction provided by Windows that talks or allows me to talk to devices and files.
+
+	Now in general, we have the object manager which is part of the executive that is responsible for managing objects in a generic way. The Object Manager doesn't really care which object it is managing; it just knows how to manage objects in a generic way, for example, by managing a reference count and names for objects.
+
+	Some type of objects can have names. And those that have names are stored in a hierarchy that is also maintained by the Object manager and allows us to lookup objects by name. Kernel objects are reference counted, which means that when I no longer need access to a particular object, I'm going to close the handle I have to my object, but I don't know whether the object will actually be destroyed. It depends on whether there are other clients that hold on to handles or references to the object. Only when the last reference is decremented, the last handle being closed, the last pointer being released related to a particular object, only then will the Object Manager destroy the object.
+
+	When working with objects from user mode, the only way to access kernel objects, which are always in kernel space, is using this indirect mechanism called the handle. Using handles is the only way to access kernel objects from user mode.
+
+	On the other hand, kernel clients, which means the kernel itself, and kernel device drivers can talk to kernel objects using either handles or directly using pointers to the object. Usually, the choice is based on the API we would like to use. Some APIs require handles, some APIs require pointers. And in kernel mode, its always fairly easy to move between the two representations with APIs which are documented in the Windows driver kit.

@@ -1,0 +1,106 @@
+Use the ? keyword in Alfred to quickly find and navigate Alfred's Preferences:
+?d
+
+Launch alfred and do what you would normally do with the spotlight tool such as opening any app you want or running system processes (like empty trash):
+cmd + space
+
+To open any file or folder:
+cmd + space -> space
+
+To open alfred preferences just search for alfred with alfred spotlight
+
+To issue shell command with alfred use the keyword >
+
+Use the "open" keyword followed by the search term to open any file you search for with alfred
+
+Use the "in" keyword followed by the search term to look for the contents of a file.
+
+Use the "find" keyword followed by the search term to look for that file.
+
+Use the "/" keyword to start searching through the root of your file system.
+
+Use the "~" keyword to start searching through the home directory of your file system.
+	- Use the left and right arrow keys to navigate
+	- Use option + cmd + / to go back
+
+
+To use universal action press the following kebard shorcut on the selected item in alfred:
+option + cmd + \ or fn or ctrl
+
+When creating a new url shortcut in alfred search for the image using the google images shortcut then download the image and then drag and drop it into the shortcut.
+
+
+
+**Clipboard Manager**
+How to access clipboard manager:
+cmd + option + c
+
+To clear clipboard history:
+cmd + space -> then type clear
+
+Hold cmd and double tab C to append the currently selected clipboard item to the previously copied text in the clipboard history
+
+
+**Calculator**
+Standard math calculation can be done by simply typing your expression such as 16 * 3
+
+Prefix with the '=' keyword to enable advanced calculator
+
+**Dictionary**
+Use the keyword "define" followed by a word to suggest spelling as you type then open the selected word in Dictionary app
+
+Use the keyword "spell" followed by a word to suggest spelling as you type then copy the selected spelling to the clipboard on action. Use cmd+o to open the result in Dictionary app
+
+
+***Helpful Links***
+https://www.alfredapp.com/help/getting-started/
+
+Basics
+https://m.youtube.com/watch?v=FXV-zwkRMxo&pp=ygUKQWxmcmVkIG1hYw%3D%3D
+https://www.youtube.com/watch?v=NbTvpxhGwvs
+
+Obisian
+https://m.youtube.com/watch?v=wN2NjnxlTm0&t=0s
+
+Workflows
+https://m.youtube.com/watch?v=U9wJmgd9kAw&pp=ygUQV29ya2Zsb3dzIGFsZnJlZA%3D%3D
+
+**Temporary Email**
+To launch temporary email type in the keyword "tmp" or "tmpmail" into alfred to open the temporary email service
+
+
+***Snippets***
+https://www.alfredapp.com/help/features/snippets/collections/
+
+***Arguments and Variables in Workflows***
+https://www.alfredapp.com/help/workflows/advanced/placeholders/
+
+***Dynamic Placeholders***
+https://www.alfredapp.com/help/workflows/advanced/placeholders/
+
+***Bookmarks***
+https://www.alfredapp.com/help/features/bookmarks/
+
+***File Buffers***
+https://www.alfredapp.com/help/features/file-search/
+https://www.alfredforum.com/topic/19435-action-the-file-buffer-from-full-alfred/
+
+
+*** For the Calculator workflow to convert hexadecimal you have to prefix with the "=" sign
+
+
+
+
+**License key**
+
+--------- BEGIN ALFRED LICENSE ---------
+A5MLEwBqb25zb25nOTRAeWFob28uY29tCAA1NzU2
+MzAzMwEEAAAZNpbjODtswTe+ABZ8U9+4GuJBvDlG
+XdWkzyooUvObkCY0jGV6nq34fRCgMsvLmNLGOu1m
+FVneGVRRwnTudKXvMQSVZ76auLuoEL6k2eHjQ9lG
+/yUbJrL6j86jOnCzS/VjAzrVopSOmOWn+pNE4Xvd
+OK/D9lcj597vutKRoWE8xxC5fflNDqM=
+---------- END ALFRED LICENSE ----------
+
+
+

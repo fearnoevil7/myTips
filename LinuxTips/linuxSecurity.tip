@@ -1,0 +1,2 @@
+If you are a user with sudo privileges... you can sign into root with your own password instead of having to type in the actual root password by running the following command:
+$> sudo -s

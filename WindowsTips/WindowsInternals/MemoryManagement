@@ -1,0 +1,381 @@
+*** Managing Memory ***
+	The memory manager is part of the Windows executive. In fact, that's the biggest manager there is as part of the executive. Bigger than the process manager, the ARM manager, and so on. There's a lot of code within the memory manager.
+
+	One of its primary responsibilities is to provide the various tables needed for mapping virtual addresses to physical addresses. The actual translation that is being done by the processor. The memory managers responsibility is to prepare those tables up front so the translation has a chance of succeeding.
+
+	It also manages a bunch of page files, could be 1, could be more, could be even 0 page files, which are used to store data so that it's possible to use more memory than you physically have. And generally speaking, any memory-related API or service is exposed by the memory manager for system components and for use in applications, using various APIs, many of which we'll discuss also later on in this course.
+
+	Now anything related to memory has to be managed using these chunks called pages. There's no way to manage every single byte because if you want to manage every single byte on the system, the management aspects themselves, the actual data structure for the management are going to be much bigger than that single byte, and so there's some kind of compromise that has to happen between managing large chunks and small chunks, and those chunks are referred to as pages.
+
+			Arch		Small		Large
+					(nomal)	
+			x86		4 KB		2 MB
+			x64		4 KB		2 MB
+			ARM		4 KB		4 MB
+			ARM64		4 KB		2 MB
+
+
+
+	There are two page sizes suported by default. The first one is the normal, sometimes referred to as a small page size. As you can see on the table, all Windows-supported architectures use 4KB as the size of a normal page. And if I say page from now on, unless I explicitly say otherwise, I mean a normal or a small page, which is also the default.
+
+	There's also a second size known as a large page. As you can see on the table it's 2 MB on all Windows-supported architectures except for ARM.
+
+	Now there's in fact a third page size, referred to as a huge page, which is a 1 GB sized page, that is supported on newer Windows platforms, Windows 10, Server 2016, and later, and of course also require support from the processors and recent intel AMD processors support that as well. Everything is always managed in terms of pages. The page could be committed or not, could be protected in a certain way or protected in a different way. Everything, as far as the memory manager and the processor is concerned, is all about pages.
+
+
+*** 64-Bit System Process Address Layout ***
+	When you have a 64-bit process, you have access to 128 TB of address space(user mode). Remember, this is just an address space, mostly empty when the process starts its life, we only have ntdll and the executable mapped into that address space once the process begins its life, but there's definitely room to move around. There's lots of room there in fact, you can't really use all this address space today because you don't have enough RAM and large enough page files to accomodate that kind of large memory, but the address space is fairly big.
+
+	Now there is the kernel space or system which is also 128 TB in size in today's systems, and again, it doesn't mean that the kernel uses all that memory. But the kernel has that memory that address space to use. In fact, it uses that in a very interesting way. For example, it randomizes certain pieces of memory within that address space to make it harder for attackers to utilize well-known addresses when trying to get access to certain memory locations by perhaps invoking vulnerable kernel drivers. Now, if we summarize or sum up 128 TB times 2, we get 256 TB, which is nowhere near the limit for 64-bit systems, which is 16 EB, that's giga, tera, peta, and then exa.
+
+	So obviously, there is a large memory of addresses here, so really a range of addresses, which cannot be mapped today, and they're referred to in internal documentation as non-canonical addresses, so they can't be used today.
+
+	So for a 32-bit process here is in fact what we get. There are, in fact, two cases here. One of them is the case where the executable itself doesn't have a flag called LARGEADDRESSAWARE in its header, in its PE header. If it doesn't have that flag, it gets 2 GB of address space, the same that it would get on a 32-bit system if it would be running on such a system.
+
+	And then, if you look at the other aspects, we have the kernel memory, which, of course, is unchanged, it's the same kernel. It's not on a per-process basis. It's just there just like in the 64-bit process case. And then there's the range that spans 2GB to 128 TB that cannot be used by that 32-bit process. Maybe pieces of that are kind of obvious because it can't get these high addresses, it only has 32 bits to work with, but there's the extra 2 GB, which are not available either.
+
+	So the last case the case where we have a 32-bit executable, and the process is created based on the case that it does have the LARGEADDRESSAWARE flag in its PE header. And in that case, it actually gets 4 GB, the full 4 GB, which are theoretically accessible by a 32-bit process because they're using 32-bit pointers, so 4 GB is the maximum they can use, obviously. And again, system space doesn't change, and there's still a big chunk of unusable address space that can't really be used by 32-bit processes because they can't see anything beyond 4 GB. Now, what is that flag?
+
+	 Why is that important? So here's the thing. When you use 2 GB only, you just need 31 bits for an address. And so programmers sometimes are not very sane, and they can say, well, I know that the most significant bit is always 0, because I know I'm going to get 2GB at most, so maybe I'll use that bit for some application-specific flag or whatever. So every time it tries to access memory, the first thing the code does is mask away that high bit, the most significant bit, and then makes the access. And so having that flag in the PE header essentially say to Windows,or to the loader, I'm okay accepting 32 bits in their entirety. I don't have any specific information I'm storing in the most integral bits, so I don't care if I get 2 GB or 4 GB. And this is definitely recommended for 32-bit executables, especially, if they need more memory than a normal 2-GB address space would give, which would be the standard case on the 32-bit Windows system.
+
+	So that's the difference there, it just says to Windows, hey, I'm okay accepting 32-bit addresses, and I'm not using the most significant bit for any specific case. 
+
+
+*** x64 Address Limitations ***
+	64 bits of addresses can reach to 2^64(2 to the 64th power) = 16EB (KB,MB,GB,TB,PB,EB)
+
+	Now current CPU architectures only support 48 bits of addresses, and this is how we bget 256 TB, which used as 128 TB per process and 128 TB for the system. So obviously there's lots of room to increase the address space size, but currently most architectures are not supporting that. So we have 128 TB per process and 128 TB for the system or kernel space. However, Intel, a few years ago is supporting, in fact, more than 48 bits, in fact, they support 57 bits in the virtual address range using the "Sunny Cove" intel microarchitecture, which is used by 9th and later generations of processors, and that gives us, in theory, 64 PB per process and 64 PB for the system.
+
+	So currently Windows doesn't turn this feature on, in fact, Windows is already built to support this kind of crasy big address space, but it's not turning on this feature just because nobody currently can build such systems that have any chance of being able to use that kind of memory, because you would need lots of physical and page file memory in order for any process to get anywhere near these kinds of numbers. But Windows is already ready to go, and at some point, I would guess that that feature would be turned on and used by systems.
+
+
+*** Virtual Page States ***
+	We know that when a process starts its life that most of its address space is empty. Only NTDLL and the executable are mapped into the address space of a process. Now, every process has its own, every process has lots of pages, obviously, that are part of the address space, which may be 2 GB, 4 GB, or 128 TB in size.
+
+	Now what is the stae of each one of these pages? In fact there are three possible states. One of them, which is the most common , is called free. It means there's just nothing there. As mentioned, most of the address space of a newly created process is empty. Most of these pages are free, there's nothing there, which means that any attempt to access that memory will immediately cause an AccessViolationException. There's simply nothing there, Which by default will cause the process to crash.
+
+	The opposite of free is committed. Committed means allocated, means memory we can use for sure. So for example, if you call a simple function like malloc from the C runtime, the pointer you get back, assuming it's not null, that points to committed memory. This means this is memory you're actually wasting, you're actually using, so the system has to make sure that it can give you that memory. And if you get a non-null pointer, then that memory is yours, which means that accessing that memory will never fail. It is possible that this memory may be paged out to a page file later on, and then when you make the access, a page fault would occur, which would cause the memory manager to bring back that data from disk, back to RAM, fix the page tables, and tell the processor to try again. But from your perspective, as the one making the access, you don't know that this is happening and you don't really need to care. You know that this is bound to succeed, there's no way this could fail.
+
+	Now there's a middle ground, or at least some sort of middle ground called reserves. Reserved pages, or reserved memory, represents an address range which is not allocated, so it's the same as free in terms of trying to access it. If you try to access reserve memory, there's nothing there and you'll get an AccessViolationException; however, that range is reserved for some future purpose.
+
+	We have seen any example of this in the previous course related to threads. So we know that the user mode thread stack is growable and grows based on this idea of having a large or some sized chunk of reserved memory with only a small chunk being committed and that commitment chunk is increased as needed based on the actual usage of the thread for its stack.
+
+	So reserved memory from the memory manager's perspective and the processor's perspective, there's nothing there; however, the memory manager does store information in a data structure called Virtual Address Descriptors that provide a way to manage and to have information about the address space of a process. It stores that information saying, hey, that range is reserved. And so if a newer location is requesting the process, it's not going to happen in that range unless explicitly that range is requested. So that's reserved memory.
+
+
+*** Committed vs Reserved Memory ***
+
+		Committed Memory			
+
+	Guaranteed to be accessible		
+	May reside on disk
+	Page fault handled transparently if page not residing in physical memory
+	"Consumed" memory
+	Count towards the system's commit limit
+
+		Reserved Memory
+	Access causes an access violation exception
+	Very cheap (nothing there)
+	Memory manager adds a Virtual Address Descriptor (VAD) that describes the reserved range
+	New allocations will not happen in this region unless explicitly requested
+
+
+
+	Committed memory is guaranteed to be accessible. The only way this could fail is if you access the particular page in a different way than its protection allows. So if your page is protected as read-only and you try to write to it, you're still going to get an exception.
+
+	It may reside on disk at some point in time. In this case, the page fault(transfer of data from page file back into memory) will be handled transparently without you even noticing. So this is done automatically. You don't have to worry about it, it just happens.
+
+	This is "consumed" memory. This is the thing that we actually waste, and this counts towards the commit limit that the syatem can handle, and we'll see later on.
+
+
+	Reserved memory, on the other hand, causes an access violation every time you try to access it because there's really nothing there.
+
+	It's very cheap because you just take a range of addresses and mark them as not being used for future allocations. That's it.
+
+	And this is done by using something called Virtual Address Descriptor which is a way to represent an item in the address space, and this is called as a binary search tree, or balanced binary search tree within the process object in the kernel as part of the way the memory manager manages and knows the state of the address space in a particular process.
+
+	New alocations will not happen in this particular range that is being reserved unless you specify the address explicitly as being part of that range, such as the case when a thread stack grows.
+
+
+
+*** Memory Counters ***
+	Various tools provide memory counter indicating consumption of memory of one kind or another.
+
+	So first we have something called working set. Working set is about RAM. It's about memory which accessing it does not require any page file to be handled. And in many cases you'll find something like Private working set. Private working set just looks at the working set used for private memory as opposed to shared memory.
+
+
+	Now then the working set really is about the entire physical memory used by a process, meaning the memory that currently accessing will not generate a page fault.
+
+	On the other hand, something a bit more useful is something called Commit Size in Task Manager, which is called Private Bytes in Process Explorer and other tools such as Performance Monitor, and this indeicates the total private committed memory in the process. So it's about committed memory, meaning memory that could be in RAM, could be not in RAM, it doesn't really matter, but it is still consumed memory; and private means that it's only about the private memory. This is mostly the counter you want to look at in the majority of cases, because shared memory usually has a fixed size so it usually doesn't care about that consumption.
+
+	Virtual Size is the total address space memory consumptions (committed + reserved)
+
+
+*** Virtual Address Translation Overview ***
+	- x64 processors wake up in "Real Mode"
+		- Original mode that existed back in the early days of the 8086 and 8088 processors from intel back in the day
+
+	- Real mode means that every address encountered by the processor is interpreted as a physical address
+		- Which means that if there is an instruction that says, hey, grab whatever is at address 1000, the processor understands that as 1000 in physical memory.
+		- There were some tweaks related to various registers, mostly segment registers, but still they were working with physical memory.
+
+
+	- In order to be able to perform virtual address translation (which gives rise to certain interesting features such as sharing) the processor is very quickly put into Protected Mode with paging (sometimes referred to as long mode in AMD's documentation)
+		- Every address encountered by the processor is interpreted as a virtual address, meaning it has to be somehow translated to a physical address
+		- Processor is the one performing the translation and if everything goes as planned nothing else is needed. The memory manager in the kernel doesn't have to intervene and is not really part of this process when everything works as planned.
+
+	- The purpose of the memory manager here is to prepare the various tables that would allow this translation to work as expected
+
+
+*** Virtual Address Translation ***
+	Every address encountered while reading code or trying to access data is interpreted as a virtual address, which means it needs to be translated the address where it actually resides in physical memory. A virtual address consists of just a simple address, but remember that everything in terms of memory is always managed in chunks of pages. The standard page size is 4 KB. Translation is also about pages, not a particular byte.
+
+	If you look at the lower 12 bits of the address, that's the 4k range, this is never actually being translated. It's simply going to be copied as is to the final address in physical memory if the translation is successful.
+
+	So the purpose of the CPU here is to translate the virtual page number and then get to where the actual physical page number is in physical memory. The byte within the page, the offset, is always copied as is to the final address.
+
+	Now how does the CPU perform this translation? The CPU has to consult some database, and that database consists of various data structures, some of them known as page directories, some of them are called page tables. And so these tables are prepared by the memory manager up front to allow the CPU to do the actual translation. The CPU will blindly go and look at these tables to make the translation happen. There's another item here that the CPU uses which is very important from a performance perspective, but not important from a conceptual perspective, and this is sometimes referred to as the translation lookaside buffer, or TLB. The TLB is a cache of recently translated pages, because as we'll see in the next couple of slides translation actually requires extra memory access, which means that we have some penalty here; in order to perform the actual translation, we first have to go through more memory accesses before actually getting to the real address we're supposed to be accessing, from the CPU's perspective.
+
+	So the TLB is there to help. When you access pages that we have recently accessed, the CPU already knows where that page is in physical memory so it can consult the TLB cache and just go there directly without having to go through the translation process again. Accessing memory that is close by is always going to better than trying to access memory, which is far away from the previous access, because that would very likely not be in the TLB cache.
+
+	Sometimes virtual address translation does not always work out. Sometimes the virtual address is not mapped to anywhere, or maybe it's mapped to something that has already been put in the page file. In that case, the CPU will say, hey, page fault, I have no idea what to do. The CPU understands memory, but it doesn't understand anything else. And so in that case, the CPU will raise an exception known as a page fault. The CPU expects the underlying operating system to handle that page fault in some meaningful way.
+
+	So in a classic case, the memory manager might say, I see that this thing is actually this page file; let me bring it back into physical memory, fix the page table entries, and then ask the processor to try again. Then processor will try again and hopefully would succeed with the translation.
+
+	So a page fault is one of those cases where the CPU gives up and says, hey, I have no idea what to do with that, let the operating system handle that and tell me what to do next.
+
+
+
+*** x86 Address Translation ***
+	32 bit processors supported up to 4 GB of physical memory, as this is what was supported on intel processors at the time. Now all though these kinds of kernels are no longer used by Windows, still it's worth while to know how virtual translation worked in those days because it's slightly easier to understand, and then we'll gradually move to what we have in today's 64-bit systems.
+
+	The first thing we see is that there's the 32-bit address that needs to be translated somehow to another 32-bit address in physical memory. Now the address is comprised of these 3 pieces, the first 12 bits as the lower bits, we know that they never actually get translated, so this will be copied or used as the offset to the final address from the beginning of some page.
+
+	So we only neexd to concern ourselves with the other 20 bits, and they are logically separated to these 2 chunks of 10 bits each, and we'll see in a moment why. So, in order to start the translation process we have to start somewhere, and this starts with something called the page directory. There's just one page directory per processes in 32-bit kernel. A page directory consists of 1024 entries each running 4 bytes in size. And this page directory is always in physical memory because if it's not in physical memory, how would the CPU find that? The page directory is never paged out; it's always in physical memory, and its address is known to the processor.
+
+	So now the processor is trying to translate an address that is being used by some thread running some code, and that thread is part of some process, and so the address of the page directory is always stored in the Kprocess data structure for that particular process. Remember, the Kprocess is one of the kernel structures used to manage a process. And while the CPU is working to translate something from that process it's going to be loaded into a CPU register, and that register is called CR3. So, CR3 knows where the page directory is and CR3 is used as the basis of the translation process.
+
+	So now what happens? The most significant 10 bits are going to select one of the entries from within that page directory. And since the page directory has 1024 entries, that's 2 to the 10th power, it makes perfect sense. And so what we have here is a particular entry called page directory entry, or PDE. The PDE would point to a particular page table. And that page table looks exactly like a page directory from the perspective that it has 1024 entries like a page directory (each entry is 4 bytes in size as well), and then the next 10 bits will select a particular page table.
+
+	How many page tables will we have in the process? It really depends on how much memory is being committed in the process. The more memory being committed and more address ranges that are being used, more page tables might have to be created based on the actual address that is being used because the address map, the PDE, and the PD points to very a particular, specific page table.
+
+	And so the scheme continues in essentially the same way. The next 10 bits will select a specific page table entry, or PTE from the currently selected page table, and that page table entry would point to the beginning of a page in physical memory. All that's left to do now, in order to access a particular byte, which is the smallest piece of memory that the CPU supports, we just need to add in the 12-bit offset. So we get to a particular byte that now is the target of the particular instruction that the CPU is trying to execute.
+
+	And this is the basic translation process. So obviously you might have some questions? For example, how come this always seems to succeed? Where is the page fault going to come into the picture?
+
+	So the way this works is it's not quite 32-bit that we actually need here for the address. If you think about it, the PTE is 32 bits. Let's just focus on the PTE for the moment. How many bits do we actually need to point to the beggining of a page? Since the 12 bits are always coming off the offset, only 20 bits are actually needed in the PTE in order to point to the beginning of a page in physical memory. Which means that we have 12 bits here which are essentially free and can be used for other purposes. And one of those purposes is to indicate whether the PTE is, in fact, valid in the first place, and that bit is bit 0 on x64 processors or on Intel and AMD processors.
+
+	And so bit 0, if it is 1, it means the page is valid, and everything else mentioned applies. Meaning that the other 20 bits that are being stored actually here in the later part of the PTE, in the highest bit, will be pointing to the beginning of a page in physical memory, and the 12 bits are going to be added from the offset.
+
+	If the bit, is set to 0, the CPU will say, okay, I have no idea what to do with that, I'm not going to continue, I'm going to raise the page fault exception and let someone else deal with that. That's the basic idea here. This is how the CPU know whether to move forward or to raise a page fault exception.
+
+	Now you also might be wondering, why do we have this scheme? Why not just use the 20 bits without the 12 bit offset as one big array? That would simply not work properly because we would have a million or so page tables that would have to be existing in contiguous memory, which doesn't make sense. So this scheme of having these two levels allows us to conserve page tables and only creates them as needed.
+
+	The only thing that is always there is the page directory. This never goes away. It's always in physical memory, and its physical address is known to CR3 and it's also stored in the Kprocess. It has to be the physical address; otherwise, how would we translate that?
+
+*** x86 PAE Virtual Address Translation ***
+	The original NT Kernel supported 32-bit physical addresses, and that was because intel supported that. However, in 1996, intel came out with the Pentium Pro processor that was still 32-bit, but supported accessing more than 4 GB of RAM. And so Microsoft had to enhance the Windows kernel, which is known as the Physical Address Extension, or PAE kernel, so the addressing scheme had to change.
+
+	So the basic idea was very similar to the previous case. We still have an input of a 32-bit address where the lower 12 bits are still going to be copied as is to the final physical address, but now RAM could be bigger. RAM could be more than 4 GB, and so a 32-bit value could have been translated to a physical address which was more than 32 bits in size.
+
+	The previous scheme had to change, and it's not immediately obvious why, but let's see how it was changed and then we'll explain why that was necessary. So now we have this new split here 9 bits, 9 bits, and 2 bits are left. The data structure which is always in physical memory is now a different one called a page directory pointer table, or PDPT, if you will, that has these four entries, because these entries can be selected by these two most significant bits from the virtual address. So we again CR3 and Kprocess pointing to that structure in physical memory. So now that we have these two bits we can select one of potentially four page directories. Each one of these entries is known as page directory pointer table entry, and the entries have been extended to 64-bit.
+
+	And you might be wondering why? And the reason is that 32 bits weren't enough to hold on to a larger offset now that had to point to larger addresses in physical memory and also hold on to more flags that were there as part of the entry, so Intel had to extend those entries to 64-bit, 8 bytes in size, and this would allow accessing larger addresses in physical memory. So these two bits are selecting one of the four page directory pointer table entries, and this one would point of course to one of the four, no more than that, page directories, which, as you recall from the previous slide, we had just one page directory, but now we have up to four page directories. Each page directory now has 512 entries, and this is perhaps the confusing part or the interesting part.
+
+	Why did Intel change the scheme to use 9 bits? Why not just leave the 10-bit scheme from the previous translation when we had the original NT Kernel? And so the problem is that every page directory in every page table cannot span more than a single page in size, which means they have to be 4 KB in size at most. In the previous case, we had 1024 entries times 4 bytes, that's exactly 4 KB, which is one page. But now since every entry has had to be extended to 64 bits, to 8 bytes, then in order to complete the page you can only have 512 entries, which is 9 bits. It requires 9 bits to map in fully. And that's why we had only 512 entries, and this is why these other 2 bits were necessary to insert another level of indirection into the picture. So we had the same scheme from that point on. The first 9 bits, the higher 9 bits select a particular page table, and then that page table is going to be selecting a particular page table entry by using the last remaining 9 bits from the address that makes sense. And that PTE will point, finally, to the beginning of the page in physical memory, and the final 12 bits will complete the offset and getting to the real byte that was targeted.
+
+	And, of course, as usual, bit 0 still serves the same purpose. If bit 0 is 0, it means the actual information there is invalid and the CPU will not move forward, but instead raise a page fault exception.
+
+	So this is how x86 PAE Virtual Address Translation works. And the idea here is that the offset within the PTE, or the number of bits used here is not just 20. In fact, it was 24. So if you add 24 with 12 coming from the offset, you have 36 bits, which allow the system to map 64 GB of RAM. And that was what was supported at the time, at least that's what Microsot supported. For 32-bit systems that were using that kernel andusing those newer processors at the time, could connect up to 64 GB of RAM to a 32-bit system. And, of course, every process wouldn't be able to use that much memory at any single point in time, but it could use that using certain APIs that were provided by Windows known as the PAE APIs.
+
+
+*** x86 PDE and PTE
+	Let's summarize the main concept in the previous two slides. We have the x86 PDE and PTE, and essentially, they have the same layout. They comprised of the bits that point to the physical address, the beginning of the physical address in terms of pages. Each entry 64-bit is 8 bytes, and by the way, a page table can also be paged out if needed, but the actual entries, they look exactly the same from a layout perspective.
+
+	In the original kernel, of course, we only have 4 bytes per one of these entries, but we're going to focus on the new scheme that has 8 bytes per entry.
+
+	The 24 bits, the upper 24 bits are known as the Page Frame Number. That's the value you have to multiply by the size of a page, essentially adding 12 bits, coming from the offset to get to the real physical address.
+
+	In the original kernel, it was just 20 bits, and because 24 bits required more space and there are more flags there and intervals thinking about 64 bits, then they extended those entries to 64-bit. Bit 0 is the most important flag there, known as the valid bit. If it's 1, it means that the CPU should go ahead and make the translation as we discussed. If it's not, it means there's something wrong with this address, it's not in physical memory right now as far as the CPU is concerned, and so a page for it is going to be raised, and the CPU is hoping here the memory manager will do something appropriate.
+
+	Now notice that page faults can also happen because of some invalid address. For example, if you think about the page directory intially, it's completely zeroed out, which means that the valid bit is also zeroed out. So if you try to access some unavailable address, which is completely not allocated or committed in any kind of way, then it's also going to raise a page fault exception from the CPU's perspective. In this case, the memory manager will come to a conclusion that this is just a bad address and would turn the page with the exception to an address violation and send that for handling to the original process. So there are other bits, that will be discussed later on after we look at 64-bit address translation.
+
+
+
+
+*** x64 Virtual Address Translation ***
+	The basic ideas are the same,; it's just the same mechanism is extended to cover very large addresses. And remember that we have only 48 bits that are used in today's systems. And so we are looking only in the 48 bits, which are the extreme 24 bits on one side and 24 bits on the other side of the address, where the middle 16 bits don't really matter for address translation, so I'm not showing that, but we're just looking at these 48 bits. And so the same ideas apply, but now we have more levels of interaction and the highest data structure here is known as page map level 4. Intel, at some point, decided to ditch these names like page directory table pointers and things like that, and decided to start using numbers because, obviously, these kinds of naming do not scale very well. So we have again the page map level 4, that would be the data structure that is always in physical memory and it's pointed to by CR3 when translation is happening, based on this process that is currently in scope, that means one of its threads is executing, and of course, the Kprocess structure holds onto this information so that when the context switch occurs between threads if a different process has to be present now, then that data, that address, can be extracted from that Kprocess. And again, you have these 9-bit schemas becasue every entry is 8 bytes in size, and it wasn't increased until now. It hasn't increased yet, and it's not really needed at this point. There are enough bits there to go around. 
+ 	So again, we have the first 9 bits, the upper 9 bits, selecting a particular PFN, and that PFN points to one of the possible 512 page directory pointer tables. And again, we have more 9 bits coming from the page directory pointer, pointing to a particular PFN that points to a particular page directory, that again, could be one of 512 possible page directories. And the same thing continues with page tables by selecting a particular page table. And finally, the PFN here, which is the PTE, the page table entry, will point to the beginning of a page as usual where the offset will serve as that particular byte within the page.
+
+	So exactly the same idea as before is simply extended. So why is it called page map level 4? Well, you'll notice that's the fourth level here. And another thing we can see here is that you might recall from the beginning of this course when we talked about the fact that intel supports now 57 bits in virtual address space, which Windows currently doesn't use, but will use in the future, and you might be wondering where that number 57 is coming from. So now it's perhaps more obvious, because if we add 9 to 48, we get to 57. So essentially, we have another full layer of translation, and in fact, in that case, the singleton entity there is known as page map level 5, or PML 5 if you look that up in Intel's documentation. So that's the idea, it's the same thing, just extended by yet another full layer of translation, which consists of more, 9 bits more, and this is why we got 57. So this is how 64-bit address translation works today, and obviously there is an overhead here for accessing all these data structures here, in order just to figure out where to actually make the access. And again, this brings me back to the translation lookaside buffer cache, which is super important in this case to make these things faster when you access similar or close-by memory.
+
+
+*** Valid x64 PTE/PDE Layout ***
+	We have a bunch of bits here. Notice that there are some bits here which are more important than others, and I would like to talk about them here. So first thing is that we have the valid bit(the first bit). The valid bit indicates whether that entire entry really should be examined and looked at by the processor. If the valid bit is 1, then what we see here is the thing that the processor is looking at. If the value bit is 0, the CPU doesn't make forward progress, but instead raises a page fault exception.
+
+	And then we have the PFN (Bits 13 to 49). The PFN is the Page Frame Number. That's essentially the value that we need to multiply by the size of a page to see where the next item is in physical memory. So, for PTE, for example, these 36 bits, if you add the other 12 bits coming from the offset that's exactly 48 bits pointing to some address in physical memory, which is also the maximum that is supported by those processors, not just in the virtual address space, but also in the physical address space, no more than 256 TB.
+
+	And then you might recall, we mentioned the fact that there are large pages also that are supported. so what is the benefit of a large page from a hardware perspective? The benefit is that instead of a 4KB page you now have a 2 MB page size so that you don't need page tables, and a single entry can map an entire 2 MB range in physical memory. I'll discuss some of thw downsides of large page files in the lst module in this course. However, the benefit is mostly with the Translation Lookaside Buffer cache, the TLB cache, because now a single entry in the cache maps 2 MB in size instead of just 4 KB. And so the large page bit here(the 8th bit) tells the CPU not to move further, but consider the rest of what remains in the bits for the non-used address as the offset.
+
+	So why is the page size 2 MB? If you sum the 9 page table bits with the 12 offset bits used to determine the byte of page it sums up to 21 bits which is exactly 2 MB in size. So this is what the 8th bit is for.
+
+	And for a huge page, which is also supported by Intel's processors, is 1 GB in size. A huge page is 1 GB because it uses the Page Directory bits as offset bits as well along with the Page Table bits and the original 12 offset bits totaling to 30 bits which is exactly 1 GB in size. So with a huge page, we have even a better usage of the Translation Lookaside Buffer. Of course, there is a downside, which will be discussed in the last module in this course. So that would be the large page size bit (8th bit).
+
+	Bits 48-63 are the reserved bits which means that there's room to increase that  scheme, and with PML level 5 with the new scheme the Intel supports today, if you add 9 more bits, there's still a little bit of free bits there in order to even support more moemory in the future.
+
+
+*** Page Faults ***
+	We know that when we have a valid page table entry, it points to the physical page in memory, and from that point on, the CPU can move forward with the access. However, if the PTE is invalid, that is if the valid bit is 0, the CPU says, hey, I have no idea what to do with that, I'm not going to continue, I'm going to raise a page fault exception. The classic case is the case where we have a page, which has been paged out to a page file, or some other file, and then the purpose of the memory manager here is to bring that page back with that, from this, back to physical memory, fix the PTE to point to that location, fix the PTE to point to that location, and tell the processor to try again.
+
+	From the CPU's perspective, a page fault is just a page fault. The value bit is 0, which means the CPU cannot move forward. However, the memory manager does provide a distinction between two type of page faults.
+
+	One of them is a hard page fault. A hard page fault is defined as one that requires disk access, and obviously, this is more expensive than the other option, which is a soft page fault.
+
+	A soft page fault does not require disk access. For example, suppose we have one process using some DLL, and then another process comes along and also wants to use the same DLL. If that DLL is already in RAM, it'll be a soft page fault. So it's going to be a page fault initially, but then the memory manager will say, hey, actually, it's already mapped into physical memory; let me just fix those PTEs to point to that physical memory, and we can tell the processor to try again.
+
+	So obviously, there is that idea that soft page faults are much better than hard page faults, which indeed is the case. And so as we'll see later on, the memory manager tires its best to have as many soft page faults as possible compared to hard page faults, because hard page faults might be really expensive; they require disk access.
+
+	What kind of page faults do we have? What kind of reasons do we have for page faults? Here are a few examples. One of them is what happens when the classic case, when you access a page that is not in RAM; it is committed, but it happens to be outside in some file, like a page file or some other mapped file. That would be the classic case we already mentioned.
+		- Reason: Accessing a page that is not in RAM but in a page file or mapped file
+		- Result: Allocate a physical page, read the data from disk and add page to the working set
+
+	There's another thing which is accessing a page in modified or standby page list, so what is that? We haven't talked about that just yet, but we'll talk about that slightyly later, in this module, we'll get back to this particular case.
+		- Reason: Accessing a page that is in the modified or standby page list
+		- Result: Move the page to the working set
+
+	When we're accessing a page which is not committed at all, so the valid bit is 0 because there's nothing there, and the memory manager consults its knowledge based on the virtual address descriptors that are part of every process, and says, well, actually, this points to nowhere. So the memory manager will turn the page fault exception into an access violation exception and send that original process for potential handling. If it's not handled, the process will crash. If the access violation is in kernel mode, then the system will blue screen.
+		- Reason: Accessing a page that is not committed
+		- Result: Access violation
+
+	Another case where you get a page fault is when someone tries to access kernel memory from user mode. It gets a page fault and then the memory manager says, well, I can't allow you to do that, so again, it turns that into an access violation.
+		- Reason: Accessing a page from user mode that can only be accessed from kernel mode
+		- Result: Access violation
+
+	Writing to a page that is read only. This will cause the CPU to throw an access violation.
+		- Result: Access violation
+
+	Another thing we'll look at later is accessing a demand zero page, so we'll get back to what that means slightly later in this module.
+		- Reason: Accessing a demand zero page
+		- Result: Add a zeroed page to the working set
+
+	We've seen the case of writing to a guard page in the course about threads, and so when we write on the guard page, again, the memory manager is going to get that page fault from the processor and then increase the stack size, if possible, for that user mode thread, as we discussed back in that course.
+		- Reason: Writing to a guard page
+		- Result: Guard page violation (if part of a thread's stack, commit more memory and add to working set)
+
+	When we're looking at copy-on-write case, when that thing happens, again the processor will have to raise an exception, so the memory manager can perform the private copy so that that process will have its own copy of that page. Usually, this is the case when you're working with data.
+		- Reason: Writing to a copy-on-write page
+		- Result: Make a process private page copy and replace in working set
+
+	If you try to execute code in some memory chunk, which is marked as no-execute, this is supported by processors today, a page fault will be raised and the memory manager will turn that into an access violation.
+		- Reason: Executing code in page makred no-execute
+		- Result: Access violation
+
+
+	So all these things are common examples, or atleast common in some respect, examples of page faults. In all cases, the memory manager has to deal with that, either turning that into another exception or handle that successfully.
+
+
+*** Page Files ***
+
+	This brings us to the concept of page files. What is a page file anyway? The basic idea has to do with when we're using memory, If we don't have any kind of page file, we can only use the RAM that we have. Once the RAM is exhausted, that's it, we're out. There is no more memory we can commit. So the purpose of a page file or page files is to provide more storage for writable private committed memory.
+
+	Let's make sure we understand these terms. So first, we're talking about committed memory only, obviously, because if the memory is reserved, then there's nothing there, there's nothing to back up; it has to be committed memory. It's about private memory because shared memory is typically backed up by a file that already exists. For example, if you're using some DLL and you didn't use that DLL for a little while in your process, and so the memory manager might have to, or might have decided to throw these pages outside of RAM, but there's no need to write them to a page file because the DLL is its own backup. And this is one reason when you try to delete a DLL that is in use, it won't work because it's being mapped, it's actually being used.
+
+	And we discussed memory-mapped files to some extent in the last module of this course, but just know that when we're talking about this shared stuff, there's no need to suse a page file, it's only for private memory and something, which, of course, is writeable; otherwise, we can't really change that anyway.
+
+	And so in terms of page files, Windows supports up to 16 page files, not just 1. Typically, you have one when you're just installing Windows, but you can have more, up to 16, only 2 on ARM, by the way, on other architectural support, 16.
+
+	They must be on different partitions. They're always named PageFile.Sys in the root partition of the disk.
+
+	You can set the initial size and the maximum size using the UI or the registry, which I'll demonstrate in the next demo.
+
+	In general, page file information is stored in the registry, and this is the location in the registry where this is stored
+		- HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PagingFiles
+
+	 Notice it's a local machine kind of thing. And for every entry there, you see the name of a drive like C; and then two numbers indicating the minimum, the initial size, and the maximum size of that page file for that drive. If you see both 0s, it means that you're letting the system decide the size as the system sees fit, and this will be discussed very soon. The maximum size of a page file is currently 16 TB in all architectures except ARM, so it's fairly big. So you can have multiple of these files, up to 16 of those, each one on a different partition.
+
+
+*** Page File Size ***
+	The most common question about page files is what should their size be? In fact, is the system-managed option in Windows a good one? So in the old days, the default page size was based on the size of RAM. In fact, the values weren't very helpful. The initial size was set to one times RAM, and the maximum size was set to three times RAM if you used page file managed, the managed options so that you don't have to worry about that.
+
+	If you think about it, that doesn't make much sense. The size of RAM has nothing to do with your memory utilization. In fact, it might be contrary to it in some cases. For example, suppose you're buying 64 GB of RAM. You're buying lots of RAM so you don't have to rely on the page file so much, but you set 64 GB as the initial size of the page file, which doesn't make much sense and perhaps steals valuable SSD drive size from your drive.
+
+	And so Windows 8 made things slightly better by capping the system-managed case for the maximum size to 32 GB. But still, that doesn't make enough sense. And, in fact, it forced people were are aware of that to make sure that their initial maximum size was set in the way that makes sense for their system. 
+
+	But Windows 10, in general, made things good again, and the basic idea there was to track the usage of committed memory by the user for a period of two week to get a sense of what's going on there, and then tweak the page file size accordingly based on what is actually being used, the actual workload used by that user. This makes much more sense than trying to figure out the size based on RAM. It has really nothing to do with RAM. It has to do with how the user is using the system, what's the memory consumption on average, perhapsk. How can we make the page file accomodate that so that the user doesn't run out of memory.
+
+
+*** Working Sets ***
+	Let's discuss working set and how physical memory is managed by the kernel in an efficient way to try to minimize hard page faults.
+
+	A working set, in general, is referring to RAM, or to be more precise, memory that doesn't cause a page fault to occur. Every process has its own working set. That's the subset of the committed memory of the process where accessing it will not cause a page fault. In an ideal world, all the memory that is committed in the process would be in RAM and would be accessed without any page fault. But of course, this is just in an ideal world. In the real world, some memory might be paged out. So every porcess has its own working set.
+
+	The system also has its own working set, which represents all the working set or memory that is currently in physical memory or accessed without a page fault, which is related to kernel components and kernel device drivers. So just like with processes, most kernel memory is pageable, just like any other memory, althought it does have a non-page aspect to it as well, which will be discussed in the next module. But at least the kernel is just like anyone else, wants to use RAM, and it has to deal with the fact that not all memory is in RAM at all times. And so whenever some data or code has to be read from a file, then the system reads a little bit more than what is actually needed in order to reduce I/O operations so that catching has a better effect.
+
+
+	Working Sets
+		- Process Working Set
+			- The subset of the process' committed memory that resides in physical memory
+
+		- System working set
+			- The subset of system memory residing in physical memory
+
+		- Demand paging
+			- When a page is needed from disk, more than one is read at a time to reduce I/O
+
+
+	Now in order to manage everything that's going on in terms of RAM, the memory manager is managing this thing called the page frame number database, or PFN database. It describes the state of all physical pages. A physical page could be free. A phyiscal page could belong to one process, maybe some private memory. A physical page might be shared between multiple processes. For example, some DLL code is in that page, anything can happen here, and so the kernel has to maintain all that information.
+
+	When thinking about PTEs, as we've seen earlier, the actual PFN number is there pointing to that particular page frame number providing details as to what that page in physical memory is used for. So for every physical page that exists on the system, there's a small data structure describing it.
+
+	So a PFN points back to PTE, at least the PFN, for some private memory. And, in general, the PFN data structure is dynamic in the sense that it looks different based on the actual page (e.g. what it is used for, whether it is shared or not, whether it is free or not). I'm not going to show the entire variations here. You can find them in the Windows Internals book. What I want to talk about here is how these physical pages are managed so that the kernel tries to minimize hard page faults, and if there are any page faults, let them be soft page faults.
+
+	Page Frame Number Database
+		- PFN database describes the state of all physical pages
+
+		- Valid PTE (Pointer Table Enties) point to entries in the PFN (Private Frame Number) database
+
+		- A PFN entry points back to the PTE
+
+		- The structure layout of a PFN entry depends on the state of the page
+
+
+
+*** Page Dynamics ***
+	Let's examine how the memory manager manages physical pages in order to make things work as smoothly as possible without incurring too many hard page faults. So it manages all these pages in a bunch of lists. The first list is called the Bad Page List. These are physical pages that have been identified as defective from a hardware perspective, so obviously they cannot used. They're are also used by memory enclaves. I'll discuss what that means a little bit more in the last module.
+
+	Then, we have processes. Every process a bunch of working set pages or pages which are part of the working set that accessing them right now would not cause any page fault. And that's just a subset of the entire set of committed memory in the process, but now we're only focusing on the physical pages, not about the entire committed pages in a process.
+
+	There's another list known as a Free Page List. The Free Page List consists of pages, in physical memory of course, that have some garbage value that belonged once to various process, but now these are up for grabs. So essentially they are freed to be used, whenever memory is needed, that's one option from where to grab physical pages for processes that need them.
+
+	Then there's another list called the Zero Page List. The Zero Page List is also a list of pages that don't belong to anyone, but the list of pages here contain the very famous number 0. So these pages are completely zeroed out. You might be wondering why do we need that? So we'll see in a moment this is in fact an optimization, and what happens is that you have a thread, and in fact, there are several threads in modern Windows, that are called Zero Page Threads. And these threads have a priority of 0, which means that's the lowest possible priority Windows supports, which means that if the CPU does nothing, there's at least one processor doing nothing, the Zero Page Thread might run.
+
+	And what that thread does is takes pages from the Free Page List, which contains some kind of garbage, and then zeros them out and grabbing them and moving them to the Zero Page List, essentially making dirty pages completely zeroed out. In fact, typically what you'll find is that the Free Page List is very, very small, and the Zero Page List is very big in terms of pages that are up for grabs, and that's because there's no downside to having a page with zeros, but there is one important upside we'll see in a moment.
+
+	So when a process for example, exits, so a process terminates for whatever reaseon, all the private physical memory it was usoiing is going to go through the Free Page List because some garbage is there. It's going to go to the Free Page List and then the Zero Page Thread will likely wake up very quickly and will zero out all these pages, putting them on the Zero Page List.
+
+	What else could happen here? This is the case of Demand Zero page faults that I mentioned a few videos back. The basic idea is this. When we call a function such as VirtualAlloc we always get a bunch of 0s, this is guaranteed. The reason for that has to do with security, and so it's not allowed for a process to get some garbage data that might have belonged to a different process, even if that process is no longer alive. And so Demand Zero page faults mean that when a process commits memory, like calling VirtualAlloc, it doesn't mean it needs that memory right now, but when it makes the access, that causes a page fault of Demand Zero type, and the memory manager is happy to oblige by providing zero page or pages to the process in question.
+
+	If all threads are busy and the zero page list gets depleted and a Demand Zero page fault should happen, the memory manager will grab a free page, zero it out at that point in time and then hand it over to the process in question.
+
+	Another thing that could happen is that the Free Page List could be used for kernel allocations, for instance. Because when kernel code allocates memory, it's considered okay to see memory that might have belonged to some proess or another, even if that process is alive or not, doesn't really matter. Because, if you are a kernel component or a kernel driver, you can look at any process memory anyway and you're not really restricted, so having that kind of thing giving you always a zero page doesn't really bring that much benefit. So it's considered okay for kernel allocations to see garbage that may have belonged to a one or another process. Also, this might happen when you to read things from disks. So if you load a DLL, the committing of the memory there, and then you have to read the data to memory, so essentially, the kernel can grab a free page or some free pages as needed based on the size of the DLL, and then load the data directly to those pages.
+
+	And that's okay because the user mode code can't see what was there before the DLL was loaded. The DLL code and data is actually just overwriting whatever garbage was there. So that's also considered okay to try to minimize to some extent the usage of the Zero Page List, which has a very specific role in this story.
+
+	So what else? What happens when processes uses too much RAM, or the working set becomes to great and perhaps the kernel decides maybe it's time to take some of these pages out? So instead of just throwing them away to the Free Page List, which would definitely be the simplest thing to do, the kernel uses a slightly more complex scheme to try to minimize hard page faults, and this is based on some other lists that I'm going to describe now.
+
+	The first one is the Standby Page List. The Standby Page List represents pages that belong to processes that have not been changed since the last time they were written to the page file, which means that if the process doesn't use a page, for example, for a while, instead of just throwing that to the Free Page List, it's going to move to the Standy Page List, saying, well, you're kind of one foot out the door, but not out the door yet, so the connection to the original process is still maintained. So if now the process suddenly decides to use that memory, a soft page fault would occur, and that page would be brought back to the working set of the process in question.
+
+	If the Standby Page List becomes too big or the Free Page List and the Zero Page List becomes too small, then some pages from the standby pages will have to trickle to the Free Page List, essentially losing their connection to the original process, so now they're up for grabs. So in some cases, that might be necessary if the system is starting to be very low on physical memory. There is another similar list called the Modified Page List. The Modified Page List also contains pages which haven't been accessed recently by processes, but their content has not yet been synchronized with the page file, so they can't be thrown away just yet.
+
+	So, what we have here is that if a process is not using some kind of page in its working set for a while, that might go into the Standby Page List or the Modified Page List, based on whether that has changed since it was last written to the page file or not. If it has, it will go to the Modified Page List. And then again, if the process suddenly decides to use that page, it can be faulted back very quickly to the process working set, this is another kind of soft page fault, which is very quick, it doesn't require any kind of I/O because the connection to the process is still maintained.
+
+	However, if the modified pages becomes too big, there's a thread called the Modified Page Writer, its purpose is to wake up and then synchronize or write modified pages to the page file, and so now these pages can go to the Standby Page List. So at that point, they can either return to the process working set if the process decides to use them, or if the Free Page List and Zero Page List become too small, these standby pages can now trickle to the Free Page List, losing their connection to the original process.
+
+	So with these page dynamics you kind of get a sense here that the kernel is doing its best to minimize hard page faults by using the Standby Page List and the Modified Page List, and optimize giving processes memory by having the Zero Page List there being managed.
+
+
+
+
+
+
+

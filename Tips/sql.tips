@@ -1,0 +1,2 @@
+How to export a sql database to a sql file:
+# mysqldump -u <username> -p <database_name> > <filename.sql>

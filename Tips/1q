@@ -1,0 +1,26 @@
+`<leader>` = ' '
+
+# Page Up & Page Down.
+- ***Page Down*** - `F8`
+- ***Page Up*** - `F9`
+
+<br>
+
+# File Navigator.
+- ***Open File Navigator*** - `<leader>pv`
+
+<br>
+
+# Buffer Keymaps
+- ***View All Buffers*** - `<F2>`
+- ***Go to next buffer*** - `<F2>`
+
+<br>
+
+# Undo Tree Plugin Keybindings.
+- ***Open Undo Tree*** - `<leader>u`
+
+<br>
+
+# FZF Plugin Keybinding.
+- ***Open FZF*** - `<F3>`

@@ -1,0 +1,2 @@
+How to compiile a go package:
+C:> go build

@@ -1,0 +1,217 @@
+How to go to the top of the web page:
+CMD + Up Arrow
+
+How to go to the bottom of the web page:
+CMD + Down Arrow
+
+How to go to a tab in firefox **mac os**
+CMD + <tab_#>
+
+How to go to next tab on firefox:
+CTRL + Tab or cmd + option + right arrow key
+
+How to go back to the previous tab:
+CTRL + SHIFT + Tab or cmd + option + left arrow key
+
+How to move tab to the right or left:
+CTRL + SHIFT + Fn + Up Arrow or CTRL + SHIFT + Fn + Down Arrow
+
+
+How to select address bar:
+CTRL + L
+
+How to unfocus address bar:
+Tab
+
+How to load previous web page:
+CTRL + [
+
+How to load page ahead:
+CTRL + ]
+
+Quick find:
+/
+
+	How to go to next search result:
+		F3
+	
+	How to go to the previous search result:
+		shift + F3
+
+**Devtools keyboard shortcuts**
+How to shift focus between devtools, main page, and address bar:
+F6
+
+How to open developer tools in firefox:
+CTRL + SHIFT + I
+
+How to cycle through developer tools:
+cmd + ] or cmd + [
+
+Toggle where you dock developer tools between the last two positions/docking modes:
+cmd + shift + D
+
+Toggle split console (except if console is the currently selected tool):
+esc
+
+How to inpspect an element:
+cmd + option + c
+
+**Devtools HTML pane keyboard shortucts**
+	-Easiest way to access HTML pane is by inpecting an element and then firefox focus will shift to the html pane
+How to move to the next or previous node:
+down arrow or up arrow
+
+How to expand or collapse currently selected node:
+right arrow or down arrow
+
+How to delete a selected node:
+Delete
+
+Undo delete of a node:
+cmd + z
+
+Redo delete of a node:
+cmd + shift + z
+
+How to hide the selected node:
+H
+
+Edit as html:
+F2
+
+Stop editing HTML:
+F2
+
+Copy the selected node's outer HTML:
+cmd + C
+
+Scroll page to where the selected node is on the page:
+S
+
+Focus on the search box in the html pane:
+cmd + F
+
+Find the next match in the markup, when searching is active:
+Return
+
+Find the previous match in the markup, when searching is active:
+Shift + Return
+
+**Devtools HTML pane keyboard shortucts**
+Focus on the search box in the Css pane:
+cmd + F
+
+Step forward through properties and values:
+Tab
+
+Step backwards through properties and values:
+Shift + Tab
+
+Increment or decrement selected value by 1:
+Up arrow or Down arrow
+
+Increment or decrement selected value by 100:
+Shift + PageUp or Shift + PageDown
+
+Increment or decrement selected value by 10:
+Shift + Up Arrow or Shift + Down Arrow
+
+Increment or decrement selected value by 0.1:
+Alt + Up Arrow + Alt + Down Arrow
+
+Show/hide more information about current property (Computed view only, when a property is selected):
+Return or Space
+
+Open MDN reference page about current property (Computed view only, when a property is selected):
+F1
+
+Open current CSS file in Style Editor (Computed view only, when a property is selected):Return
+
+
+How to close a tab in firefox:
+CTRL + W
+
+How to open a window in firefox:
+CTRL + T
+
+How to restore previous session:
+Click Firefox menu button and go to History -> Recently closed tabs
+
+Useful firefox keyboard shortcuts:
+https://www.businessinsider.com/guides/tech/firefox-keyboard-shortcuts
+
+Go to last tab:
+CTRL + 9
+
+Go to a specific tab:
+CTRL + Tab#Num (Press Ctrl and any number from 1 to 8 to switch immediately to that numbered tab. For example, to switch to the second tab in a window, press Ctrl-2.) 
+
+Undo a closed tab:
+SHIFT + CTRL + T
+
+Reopen last closed window:
+command + shift + N
+
+Move a tab to the left or right:
+CTRL + SHIFT + Page Up (Right)
+CTRL + SHIFT + Page Down (Left)
+
+Reload a page:
+CTRL + R
+
+Reload and override cache:
+CTRL + SHIFT + R (Reloads the page without using any locally stored files in the browser cache, which forces Firefox to reload the page by downloading all new files.)
+
+Open the history sidebar:
+CTRL + H
+
+Open the bookmarks sidebar:
+CTRL + B
+
+**Media Controls**
+
+Play or pause video:
+Space Bar
+
+Skip ahead or back:
+Right Arrow or Left Arrow
+
+Toggle full screen view:
+F11 or CMD + SHIFT + R (on MACs)
+
+**Navigating Pages**
+Go to bottom of page:
+CTRL + Down Arrow
+
+Go to top of page:
+CTRL + Up Arrow
+
+Scroll up and down page faster:
+fn + Up Arrow or fn + Down Arrow
+
+How to turn off cache in firefox:
+    -Type about:config into the url
+    -Then type cache into the search bar
+    -Then set the following options to false:
+	-browser.cache.disk.enable
+	-browser.cache.disk_cache_ssl
+	-browser.cache.memory.enable
+
+How to filter for a keyword in firefox:
+	-Press CTRL + f then a searchbar will pop up
+	-Type in keyword and firefox will search the page for that specific key word
+
+How to open filter search in new current tab:
+options + enter
+
+How to open filter search in new background tabb
+cmd + shift + return
+
+How to open add-ons menu:
+cmd + shift + A
+
+
+*** View all firefox process specifics ***
+In the URL go to:
+about:processes
